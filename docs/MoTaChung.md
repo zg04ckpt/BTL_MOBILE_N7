@@ -10,24 +10,23 @@
 - Các dạng trả lời: trắc nghiệm (4 câu) hoặc chọn nhiều câu đúng
 - Các câu hỏi được tổng hợp từ ngân hàng câu hỏi của ứng dụng
 
-### Các chức năng khác
-- [TênFile_NguoiLam] - Tạo/Liên kết tài khoản google
-- [TênFile_NguoiLam] - Chức năng xếp hạng người chơi (Có tài khoản mới được xếp hạng, xếp hạng trên nhiều tiêu chí)
-- [TênFile_NguoiLam] - Thi đấu nhiều người chơi
-- [TênFile_NguoiLam] - Thi đấu tự do nhiều chủ đề
-- [TênFile_NguoiLam] - Sự kiện thử thách (có bảng xếp hạng riêng)
-- [TênFile_NguoiLam] - Thách đấu
-- [TênFile_NguoiLam] - Luyện tập trắc nghiệm
-- [TênFile_NguoiLam] - Thông báo
-- [TênFile_NguoiLam] - Website quản lý
 
 ### File mô tả các luồng xử lý + các giao diện
-- [TênFile_NguoiLam] - GD Đăng kí, đăng nhập
-- [TênFile_NguoiLam] - GĐ Trang chủ
-- [TênFile_NguoiLam] - GĐ BXH
-- [TênFile_NguoiLam] - GĐ Thử thách (Events)
+- [TênFile_NguoiLam] - Mô tả các quy tắc liên quan tới users 
+- [TênFile_NguoiLam] - GD Đăng kí tài khoản khách
+- [TênFile_NguoiLam] - GD Đăng nhập
+- [TênFile_NguoiLam] - GD Thông tin cá nhân
+
+- [TênFile_NguoiLam] - Mô tả các quy tắc liên quan tới ghép trận và nội dung thi đấu 
 - [TênFile_NguoiLam] - GĐ Ghép trận
 - [TênFile_NguoiLam] - GĐ Thi đấu
-- [TênFile_NguoiLam] - GĐ Thông tin cá nhân
+
+- [TênFile_NguoiLam] - Mô tả các quy tắc liên quan tới xếp hạng 
+- [TênFile_NguoiLam] - GĐ BXH
 - [TênFile_NguoiLam] - GĐ Chờ thách đấu
-- [TênFile_NguoiLam] - GĐ Quản lý
+- [TênFile_NguoiLam] - GĐ Thử thách (Events)
+
+- [TênFile_NguoiLam] - Mô tả các quy tắc liên quan tới quản lý người dùng và ngân hàng câu hỏi
+- [TênFile_NguoiLam] - GĐ Website Quản lý
+
+- [TênFile_NguoiLam] - GĐ Trang chủ
