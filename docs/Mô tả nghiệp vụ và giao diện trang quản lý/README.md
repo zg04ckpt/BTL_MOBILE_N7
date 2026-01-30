@@ -1,6 +1,6 @@
 # MỤC LỤC CÁC FILE NGHIỆP VỤ VÀ GIAO DIỆN
 
-Mỗi file dưới đây mô tả **một nghiệp vụ** kèm **mô tả giao diện** (rút gọn, đủ để designer hiểu; không quá chi tiết pixel/màu/tỷ lệ).
+Mỗi file dưới đây mô tả **một nghiệp vụ** kèm **mô tả giao diện**.
 
 ## 1. QUẢN LÝ NGƯỜI DÙNG
 | File | Nghiệp vụ |
