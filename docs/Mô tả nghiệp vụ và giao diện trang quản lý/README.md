@@ -57,8 +57,3 @@ Mỗi file dưới đây mô tả **một nghiệp vụ** kèm **mô tả giao d
 | File | Nghiệp vụ |
 |------|-----------|
 | [8-1-gui-thong-bao.md](8-1-gui-thong-bao.md) | Gửi thông báo |
-
----
-**Cấu trúc mỗi file:** Nghiệp vụ (mục đích, luồng xử lý, quy tắc, validation) + **Mô tả giao diện** (layout, component, trạng thái, tương tác — đủ để designer triển khai).
-
-**Giao diện mobile:** Các file đã gợi ý responsive/mobile: danh sách dùng **card** thay bảng, toolbar gom thành nút **Bộ lọc** mở drawer/modal, form **1 cột** và nút CTA **sticky bottom** hoặc full width, dialog form dài ưu tiên **bottom sheet** hoặc trang full thay modal giữa màn, tabs **scroll ngang** hoặc dropdown. Designer triển khai app admin cần đảm bảo vùng chạm đủ lớn và tránh bảng nhiều cột trên màn nhỏ.
