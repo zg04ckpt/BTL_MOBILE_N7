@@ -47,6 +47,7 @@ Giao diện cấu hình có thể scroll, lựa chọn màu sắc được thố
         - Text: Số lượng người
         - Text: Chủ đề
         - Text: DS bonus (VD: X2 điểm xếp hạng, +10 điểm XH, ...) [Sửa đổi sau khi có quy tắc XH]
+        - Text: Quy tắc chơi
     - Button:
         - Nội dung: Bắt đầu ngay
         - Chiều rộng: kéo dài hết chiều ngang BottomSheetDialog
