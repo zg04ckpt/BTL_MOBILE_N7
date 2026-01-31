@@ -12,7 +12,7 @@
   - Chuyển cảnh giữa các màn hình lớn.
   - Xử lý tác vụ quan trọng chặn toàn bộ thao tác (ví dụ: Thanh toán, Đăng nhập).
 - **Giao diện:**
-  - Nền: Lớp overlay màu đen/trắng (opacity 50-80%) che phủ toàn bộ nội dung.
+  - Nền: Lớp overlay mờ (opacity 50-80%) che phủ toàn bộ nội dung.
   - Icon: Spinner xoay tròn hoặc Logo ứng dụng có hiệu ứng pulse/beat.
   - Text: "Đang tải dữ liệu...", "Vui lòng chờ...".
 
@@ -21,7 +21,7 @@
   - Tải dữ liệu cho một phần cụ thể của màn hình (Danh sách, Card thông tin).
   - Giữ layout ổn định, không bị giật (layout shift).
 - **Giao diện:**
-  - Hình khối (Skeleton): Các khối màu xám nhạt mô phỏng cấu trúc nội dung (Avatar tròn, dòng text dài/ngắn).
+  - Hình khối (Skeleton): Các khối màu trung tính mô phỏng cấu trúc nội dung (Avatar tròn, dòng text dài/ngắn).
   - Hiệu ứng: Animation sóng trượt (Shimmer effect) từ trái qua phải.
 
 ### 2.3. Loading Trên Nút (Button Loading State)

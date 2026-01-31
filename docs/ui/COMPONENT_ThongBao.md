@@ -11,11 +11,11 @@ Cung cấp thông tin phản hồi cho người dùng về trạng thái của c
 - **Sử dụng khi:** Đăng nhập thành công, Lưu thay đổi, Copy text, Lỗi kết nối nhẹ.
 - **Giao diện:**
   - Vị trí: Góc trên cùng (Top) hoặc dưới cùng (Bottom) màn hình, nổi lên trên nội dung.
-  - Màu sắc:
-    - Xanh lá (Success): Thành công.
-    - Đỏ (Error): Thất bại/Lỗi.
-    - Vàng (Warning): Cảnh báo.
-    - Xanh dương/Xám (Info): Thông tin chung.
+  - Phân loại (Type):
+    - Success: Thành công (Màu tích cực).
+    - Error: Thất bại/Lỗi (Màu tiêu cực).
+    - Warning: Cảnh báo (Màu cảnh báo).
+    - Info: Thông tin chung (Màu trung tính).
   - Icon: Tương ứng với loại thông báo (Check V, Dấu X, Dấu chấm than).
   - Nội dung: Text ngắn gọn (1-2 dòng).
 - **Hành vi:**

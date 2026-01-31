@@ -37,7 +37,7 @@ Hiển thị thông tin cá nhân của người chơi, thống kê thành tích
   - Icon: Bút chì.
   - Hành động: Mở popup đổi tên, avatar.
 - Nút "Đăng xuất":
-  - Màu sắc: Đỏ hoặc xám.
+  - Kiểu hiển thị: Nổi bật (Danger style) hoặc Vô hiệu hóa.
   - Vị trí: Dưới cùng danh sách.
 
 ## 3. LUỒNG THAO TÁC

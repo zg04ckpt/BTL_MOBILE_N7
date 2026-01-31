@@ -24,6 +24,6 @@
 - **Phần thưởng mùa giải:** Trao khung, huy hiệu dựa trên Rank cao nhất đạt được trong mùa.
 
 ## 4. HIỂN THỊ BXH
-- **Scope:** Global, Friends.
+- **Scope:** Global (Toàn Server).
 - **Timeframe:** Tuần (Reset 00:00 T2), Tháng, All-time.
 - **Cache:** BXH không realtime 100% để giảm tải DB. Cập nhật 5-10 phút/lần hoặc Realtime với Redis Sorted Set.

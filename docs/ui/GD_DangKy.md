@@ -57,8 +57,7 @@ Giao diện Đăng ký cho phép người chơi tạo tài khoản mới để t
 
 ### 2.5. Phần Thông Báo Lỗi
 - Vị trí: Hiển thị dưới ô input bị lỗi hoặc Toast thông báo chung
-- Màu sắc: Đỏ
-- Kiểu hiển thị: Dòng text ngắn gọn
+- Kiểu hiển thị: Nổi bật (Error state), dòng text ngắn gọn
 
 ## 3. LUỒNG THAO TÁC
 

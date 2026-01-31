@@ -13,7 +13,7 @@
 - **Đồng bộ:** Tất cả bắt đầu cùng lúc.
 - **Luật:**
   - Làm hết 10 câu hoặc hết giờ -> Kết thúc.
-  - Được phép sai, được phép quay lại sửa (trong thời gian cho phép).
+  - Được phép sai, được phép quay lại sửa đáp án hoặc nhảy câu (Exam Mode).
 
 ## 2. QUY TẮC GHÉP TRẬN (MATCHMAKING)
 - **Tiêu chí:**
@@ -32,9 +32,8 @@
   - Dễ: x1.0
   - Trung bình: x1.2
   - Khó: x1.5
-- **Điểm thời gian (Chỉ multiplayer):** Trả lời nhanh trong 3s đầu: +Bonus.
-- **Điểm Combo:** Trả lời đúng liên tiếp 3 câu: +Bonus.
-- **Điểm Nhanh nhẹn (Hoàn thành bài):** +20 điểm nếu xong sớm nhất và đúng >80%.
+- **Điểm Combo (Chỉ Solo):** Trả lời đúng liên tiếp 3 câu: +Bonus.
+- **Điểm Nhanh nhẹn (Chỉ Multiplayer):** +20 điểm nếu hoàn thành bài thi sớm nhất và đúng >80%.
 
 ## 4. XỬ LÝ NGẮT KẾT NỐI
 - **Mất mạng:**

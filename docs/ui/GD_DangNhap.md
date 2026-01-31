@@ -34,7 +34,7 @@ Giao diện Đăng nhập cho phép người chơi xác thực danh tính để 
 - Liên kết Quên mật khẩu:
   - Text: "Quên mật khẩu?"
   - Vị trí: Căn phải, dưới trường mật khẩu
-  - Màu: Màu phụ
+  - Kiểu hiển thị: Text phụ (Secondary text)
 
 ### 2.4. Phần Điều Hướng
 - Text thông tin: "Bạn chưa có tài khoản?"
@@ -45,8 +45,7 @@ Giao diện Đăng nhập cho phép người chơi xác thực danh tính để 
 
 ### 2.5. Phần Thông Báo Lỗi
 - Vị trí: Hiển thị dưới ô input bị lỗi hoặc Toast thông báo chung
-- Màu sắc: Đỏ
-- Kiểu hiển thị: Dòng text ngắn gọn hoặc Popup
+- Kiểu hiển thị: Nổi bật (Error state), dòng text ngắn gọn hoặc Popup
 
 ## 3. LUỒNG THAO TÁC
 

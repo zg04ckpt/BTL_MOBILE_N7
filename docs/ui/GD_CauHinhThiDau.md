@@ -31,8 +31,8 @@ Giao diện Cấu hình thi đấu cho phép người chơi lựa chọn các th
   - Quy tắc:
     - Tự động khóa chọn "1" khi lựa chọn "Vượt ải đơn"
     - Chỉ cho phép chọn 2, 5, 10 khi lựa chọn "Ghép trận"
-- Trạng thái lựa chọn: Đổi màu nền đậm hơn và highlight viền khi được chọn
-- Trạng thái vô hiệu hóa: Màu xám, không cho nhấn khi không hợp lệ
+- Trạng thái lựa chọn: Nổi bật nền và highlight viền khi được chọn (Selected state)
+- Trạng thái vô hiệu hóa: Mờ đi (Disabled), không cho nhấn khi không hợp lệ
 
 ### 2.4. Khu Vực Lựa Chọn Chủ Đề
 - Tiêu đề khu vực: "Lựa chọn chủ đề"
