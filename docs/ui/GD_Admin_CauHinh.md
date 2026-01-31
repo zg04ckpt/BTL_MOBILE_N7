@@ -18,9 +18,7 @@ Giao diện cho phép Admin cấp cao điều chỉnh các tham số vận hành
 - Hệ số ELO K-factor
 - Số lượng câu hỏi mỗi trận đấu
 
-### 2.3. Nhóm Cấu Hình Quảng Cáo / Monetization (Nếu có)
-- Tần suất hiển thị quảng cáo
-- Giá trị phần thưởng khi xem video
+### 2.3. (Đã lược bỏ phần cấu hình Quảng cáo)
 
 ## 3. LUỒNG THAO TÁC
 1. Admin thay đổi giá trị trong các ô input

@@ -131,15 +131,4 @@ Giao diện Đăng ký cho phép người chơi tạo tài khoản mới để t
   - Kinh nghiệm: 0
 - Gửi email xác nhận (nếu có)
 
-## 5. RESPONSIVE
 
-### 5.1. Desktop
-- Form ở giữa màn hình
-- Chiều rộng tối đa: 400-500px
-- Các trường xếp dọc
-
-### 5.2. Mobile
-- Form full width với padding 2 bên
-- Nút full width
-- Keyboard tự động hiển thị khi focus vào input
-- Có thể cuộn trang khi keyboard hiển thị

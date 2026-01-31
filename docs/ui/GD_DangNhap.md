@@ -90,15 +90,4 @@ Giao diện Đăng nhập cho phép người chơi xác thực danh tính để 
 - Loading: Disable tất cả các nút và input khi đang xử lý
 - Timeout: Hiển thị lỗi nếu request quá 30 giây
 
-## 5. RESPONSIVE
 
-### 5.1. Desktop
-- Form ở giữa màn hình
-- Chiều rộng tối đa: 400-500px
-- Logo lớn, rõ ràng
-
-### 5.2. Mobile
-- Form full width với padding 2 bên
-- Nút full width
-- Logo thu nhỏ
-- Keyboard tự động hiển thị khi focus vào input

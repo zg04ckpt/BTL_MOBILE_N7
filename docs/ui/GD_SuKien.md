@@ -38,7 +38,7 @@ Tạo nội dung tươi mới, giới hạn thời gian để tăng tương tác
 3. Người dùng xem thông tin và nhấn "Tham gia ngay".
 4. Hệ thống kiểm tra điều kiện (Vé/Lượt chơi):
    - Nếu đủ: Trừ vé -> Chuyển sang màn hình thi đấu (Bộ câu hỏi riêng của Event).
-   - Nếu thiếu: Hiển thị gợi ý mua thêm vé hoặc xem quảng cáo (nếu có).
+   - Nếu thiếu: Hiển thị gợi ý mua thêm vé.
 
 ### 3.2. Luồng Nhận Thưởng
 1. Sau khi kết thúc game sự kiện, hệ thống tổng kết điểm event.
@@ -56,5 +56,4 @@ Tạo nội dung tươi mới, giới hạn thời gian để tăng tương tác
 - Milestone: Đạt mốc 5 câu/10 câu -> Nhận quà ngay.
 - Event Leaderboard: Top 10 người cao điểm nhất sự kiện nhận Huy hiệu độc quyền sau khi sự kiện kết thúc.
 
-## 5. RESPONSIVE
-- Popup hiển thị tối ưu trên cả mobile (dạng Fullscreen dialog) và desktop (dạng Modal center).
+

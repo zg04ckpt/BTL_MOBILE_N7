@@ -71,10 +71,4 @@ Hiển thị thông tin cá nhân của người chơi, thống kê thành tích
 - Người dùng chỉ sửa được Tên hiển thị (Display Name), không sửa được Tên đăng nhập (Username).
 - Avatar có thể chọn từ danh sách có sẵn hoặc upload (tùy cấu hình).
 
-## 5. RESPONSIVE
 
-### 5.1. Desktop
-- Layout 2 cột: Cột trái là Thông tin chính + Menu, Cột phải là Thống kê + Lịch sử đấu.
-
-### 5.2. Mobile
-- Layout 1 cột dọc cuộn.

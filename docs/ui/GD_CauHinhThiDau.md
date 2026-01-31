@@ -102,19 +102,4 @@ Giao diện Cấu hình thi đấu cho phép người chơi lựa chọn các th
 - Kiểm tra người dùng đã lựa chọn đầy đủ các thông tin trước khi cho phép nhấn "Xác nhận"
 - Kiểm tra chủ đề có đủ số lượng câu hỏi (tối thiểu 10 câu đã duyệt)
 
-## 5. RESPONSIVE
 
-### 5.1. Desktop
-- Layout 3 khu vực xếp dọc
-- Mỗi lưới có khoảng cách hợp lý
-- Chiều rộng tối đa: 600-800px, canh giữa
-
-### 5.2. Tablet
-- Layout tương tự desktop nhưng thu nhỏ
-- Có thể giữ nguyên lưới 2 cột
-
-### 5.3. Mobile
-- Layout full width với padding 2 bên
-- Lưới 2 cột cho tất cả các lựa chọn
-- Nút "Xác nhận" sticky ở bottom
-- Bottom Sheet Dialog full width
