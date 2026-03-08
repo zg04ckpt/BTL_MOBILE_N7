@@ -1,23 +1,27 @@
 <script lang="ts" setup >
-
+    import Header from './Header.vue';
+    import Sidebar from './Sidebar.vue';
 </script>
 
 <template>
-    <!-- Nav bar -->
-    <header>
-      <nav>
-        <RouterLink to="/">Trang chủ</RouterLink>
-        <RouterLink to="/about">Giới thiệu</RouterLink>
-      </nav>
-    </header>
+    <!-- Header -->
+    <Header/>
 
     <!-- Sidebar -->
-    <aside>
-        
-    </aside>
+    <Sidebar />
 
     <!-- Content -->
-    <div class="content">
+    <div class="content m-3 bg-danger">
         <RouterView />
     </div>
 </template>
+
+<style lang="css" scoped>
+    .content {
+        position: fixed;
+        top: 50px;
+        left: 250px;
+        bottom: 0;
+        right: 0;
+    }
+</style>
