@@ -13,8 +13,11 @@ namespace Feature.Users.Services
     public class UserService
         : CrudWithPagingService<User, CreateUserRequest, UpdateUserRequest, UserListItemDto, UserDetailDto, SearchUserRequest>, IUserService
     {
-        public UserService(IUnitOfWork uow) : base(uow)
+        private readonly IStorageService _storageService;
+
+        public UserService(IUnitOfWork uow, IStorageService storageService) : base(uow)
         {
+            _storageService = storageService;
         }
 
         public async Task<UserProfileDto> GetProfileAsync(int userId)
@@ -111,9 +114,9 @@ namespace Feature.Users.Services
                 (string.IsNullOrEmpty(request.Name) || u.Name.Contains(request.Name));
         }
 
-        protected override User MapFromCreateToEntity(CreateUserRequest request)
+        protected override Task<User> MapFromCreateToEntityAsync(CreateUserRequest request)
         {
-            return new User
+            var user = new User
             {
                 Name = request.Name,
                 Email = request.Email,
@@ -128,6 +131,8 @@ namespace Feature.Users.Services
                 RoleId = request.RoleId,
                 AvatarUrl = string.Empty
             };
+
+            return Task.FromResult(user);
         }
 
         protected override UserDetailDto MapFromEntityToDetail(User entity)
@@ -163,7 +168,7 @@ namespace Feature.Users.Services
             };
         }
 
-        protected override Task UpdateEntityAsync(User entity, UpdateUserRequest request)
+        protected override async Task UpdateEntityAsync(User entity, UpdateUserRequest request)
         {
             entity.Name = request.Name;
             entity.Email = request.Email;
@@ -175,10 +180,15 @@ namespace Feature.Users.Services
             entity.Exp = request.Exp;
             entity.RoleId = request.RoleId;
 
-            // TODO: Xử lý upload avatar từ request.Avatar
-            // entity.AvatarUrl = ...
+            if (request.Avatar != null)
+            {
+                if (!string.IsNullOrEmpty(entity.AvatarUrl))
+                {
+                    await _storageService.DeleteAsync(entity.AvatarUrl);
+                }
 
-            return Task.CompletedTask;
+                entity.AvatarUrl = await _storageService.SaveAsync(request.Avatar);
+            }
         }
     }
 }

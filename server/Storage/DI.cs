@@ -1,3 +1,4 @@
+using Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Storage.Services;
 
@@ -7,10 +8,11 @@ namespace Storage
     {
         public static IServiceCollection AddStorageServices(this IServiceCollection services)
         {
-            services.AddScoped<IImageStorageService, ImageStorageService>();
+            services.AddScoped<IStorageService, ImageStorageService>();
             services.AddHostedService<ImageCleanupService>();
             
             return services;
         }
     }
 }
+

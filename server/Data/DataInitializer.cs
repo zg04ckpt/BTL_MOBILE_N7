@@ -2,6 +2,7 @@
 using Core.Utilities;
 using Feature.Users.Entities;
 using Feature.Users.Enums;
+using Feature.Settings.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,12 +13,18 @@ namespace Data
         private readonly AppDbContext _context;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<DataInitializer> _logger;
+        private readonly ISystemConfigurationService _configurationService;
 
-        public DataInitializer(AppDbContext context, IUnitOfWork unitOfWork, ILogger<DataInitializer> logger)
+        public DataInitializer(
+            AppDbContext context, 
+            IUnitOfWork unitOfWork, 
+            ILogger<DataInitializer> logger,
+            ISystemConfigurationService configurationService)
         {
             _context = context;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _configurationService = configurationService;
         }
 
         public async Task CheckAndUpdateFromMigrationAsync()
@@ -114,6 +121,9 @@ namespace Data
                     };
                     await userRepo.AddAsync(users);
                 }
+
+                // Initialize default system configurations
+                await _configurationService.InitializeDefaultConfigurationsAsync();
 
                 await _unitOfWork.CommitTransactionAsync();
             }

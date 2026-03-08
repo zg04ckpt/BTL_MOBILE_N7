@@ -22,25 +22,25 @@ namespace Storage.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Image Cleanup Service đã khởi động");
+            _logger.LogInformation("Image Cleanup Service started");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    _logger.LogInformation("Bắt đầu quét và dọn dẹp ảnh không sử dụng lúc {Time}", DateTime.UtcNow);
+                    _logger.LogInformation("Starting cleanup of unused images at {Time}", DateTime.UtcNow);
                     await CleanupUnusedImagesAsync();
-                    _logger.LogInformation("Hoàn thành quét và dọn dẹp ảnh lúc {Time}", DateTime.UtcNow);
+                    _logger.LogInformation("Completed cleanup of unused images at {Time}", DateTime.UtcNow);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Lỗi khi dọn dẹp ảnh không sử dụng");
+                    _logger.LogError(ex, "Error while cleaning up unused images");
                 }
 
                 await Task.Delay(_interval, stoppingToken);
             }
 
-            _logger.LogInformation("Image Cleanup Service đã dừng");
+            _logger.LogInformation("Image Cleanup Service stopped");
         }
 
         private async Task CleanupUnusedImagesAsync()
@@ -63,18 +63,18 @@ namespace Storage.Services
                 .Where(name => !string.IsNullOrEmpty(name))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            _logger.LogInformation("Tìm thấy {Count} ảnh đang được sử dụng", usedFileNames.Count);
+            _logger.LogInformation("Found {Count} images in use", usedFileNames.Count);
 
-            // Lấy tất cả file trong thư mục uploads
+            // Get all files in uploads folder
             var uploadFolder = Path.Combine(AppContext.BaseDirectory, "uploads");
             if (!Directory.Exists(uploadFolder))
             {
-                _logger.LogWarning("Thư mục uploads không tồn tại");
+                _logger.LogWarning("Uploads folder does not exist");
                 return;
             }
 
             var allFiles = Directory.GetFiles(uploadFolder);
-            _logger.LogInformation("Tìm thấy {Count} file trong thư mục uploads", allFiles.Length);
+            _logger.LogInformation("Found {Count} files in uploads folder", allFiles.Length);
 
             var deletedCount = 0;
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -84,35 +84,35 @@ namespace Storage.Services
                 var fileName = Path.GetFileName(filePath);
                 var extension = Path.GetExtension(fileName).ToLowerInvariant();
 
-                // Chỉ xử lý file ảnh
+                // Only process image files
                 if (!allowedExtensions.Contains(extension))
                 {
                     continue;
                 }
 
-                // Nếu file không được sử dụng, xóa nó
+                // If file is not in use, delete it
                 if (!usedFileNames.Contains(fileName))
                 {
                     try
                     {
                         File.Delete(filePath);
                         deletedCount++;
-                        _logger.LogInformation("Đã xóa file không sử dụng: {FileName}", fileName);
+                        _logger.LogInformation("Deleted unused file: {FileName}", fileName);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Không thể xóa file {FileName}", fileName);
+                        _logger.LogError(ex, "Cannot delete file {FileName}", fileName);
                     }
                 }
             }
 
             if (deletedCount > 0)
             {
-                _logger.LogInformation("Đã xóa {Count} file ảnh không sử dụng", deletedCount);
+                _logger.LogInformation("Deleted {Count} unused image files", deletedCount);
             }
             else
             {
-                _logger.LogInformation("Không có file ảnh nào cần xóa");
+                _logger.LogInformation("No image files need to be deleted");
             }
         }
     }

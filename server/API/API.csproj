@@ -14,6 +14,9 @@
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Data\Data.csproj" />
     <ProjectReference Include="..\Feature.Users\Feature.Users.csproj" />
+    <ProjectReference Include="..\Feature.Quizzes\Feature.Quizzes.csproj" />
+    <ProjectReference Include="..\Feature.Settings\Feature.Settings.csproj" />
+    <ProjectReference Include="..\Feature.Overview\Feature.Overview.csproj" />
     <ProjectReference Include="..\Storage\Storage.csproj" />
   </ItemGroup>
 

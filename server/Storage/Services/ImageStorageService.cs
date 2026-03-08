@@ -1,15 +1,10 @@
 ﻿using Core.Exceptions;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 
 namespace Storage.Services
 {
-    public interface IImageStorageService
-    {
-        Task<string> SaveAsync(IFormFile file);
-        Task DeleteAsync(params string[] paths);
-    }
-
-    public class ImageStorageService : IImageStorageService
+    public class ImageStorageService : IStorageService
     {
         public Task DeleteAsync(params string[] paths)
         {
@@ -39,7 +34,7 @@ namespace Storage.Services
                     }
                     catch (Exception ex)
                     {
-                        throw new ServerErrorException($"Không thể xóa file {fileName}: {ex.Message}");
+                        throw new ServerErrorException($"Cannot delete file {fileName}: {ex.Message}");
                     }
                 }
                 else
@@ -50,7 +45,7 @@ namespace Storage.Services
 
             if (errors.Any())
             {
-                throw new NotFoundException($"Các file sau không tồn tại: {string.Join(", ", errors)}");
+                throw new NotFoundException($"Files not found: {string.Join(", ", errors)}");
             }
 
             return Task.CompletedTask;
@@ -60,20 +55,20 @@ namespace Storage.Services
         {
             if (file == null || file.Length == 0)
             {
-                throw new BadRequestException("File không hợp lệ");
+                throw new BadRequestException("Invalid file");
             }
 
             const long maxSize = 5 * 1024 * 1024;
             if (file.Length > maxSize)
             {
-                throw new BadRequestException("File quá lớn (tối đa 5MB)");
+                throw new BadRequestException("File too large (max 5MB)");
             }
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(extension))
             {
-                throw new BadRequestException("Định dạng ảnh không hợp lệ");
+                throw new BadRequestException("Invalid image format");
             }
 
             var fileName = $"{Guid.NewGuid()}{extension}";

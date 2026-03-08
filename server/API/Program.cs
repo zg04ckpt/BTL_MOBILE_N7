@@ -3,10 +3,14 @@ using Core.Exceptions;
 using Core.Models;
 using Core.Utilities;
 using Data;
+using Feature.Overview;
+using Feature.Quizzes;
+using Feature.Settings;
 using Feature.Users;
 using Feature.Users.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Storage;
 using System.Text;
@@ -22,6 +26,9 @@ namespace API
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddUsersFeature();
+            builder.Services.AddQuizzesFeature();
+            builder.Services.AddSettingsFeature();
+            builder.Services.AddOverviewFeature();
             builder.Services.AddDBService();
             builder.Services.AddStorageServices();
 
@@ -120,6 +127,18 @@ namespace API
             var app = builder.Build();
             app.UseMiddleware<GlobalExceptionMiddleware>();
             app.UseMiddleware<ExtractTokenMiddleware>();
+
+            // Optional: Enable maintenance mode and version check
+            app.UseMiddleware<Feature.Settings.Middlewares.MaintenanceMiddleware>();
+            app.UseMiddleware<Feature.Settings.Middlewares.AppVersionMiddleware>();
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                    Path.Combine(AppContext.BaseDirectory, "uploads")),
+                RequestPath = "/uploads"
+            });
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();

@@ -1,4 +1,4 @@
-﻿namespace Feature.Quiz.Model
+﻿namespace Feature.Quizzes.Models
 {
     public class Answers
     {
@@ -6,3 +6,4 @@
         public List<string> StringAnswers { get; set; }
     } 
 }
+

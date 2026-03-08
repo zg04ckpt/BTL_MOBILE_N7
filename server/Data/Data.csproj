@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -19,7 +19,12 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Core\Core.csproj" />
 		<ProjectReference Include="..\Feature.Quizzes\Feature.Quizzes.csproj" />
+		<ProjectReference Include="..\Feature.Settings\Feature.Settings.csproj" />
 		<ProjectReference Include="..\Feature.Users\Feature.Users.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Seeders\" />
 	</ItemGroup>
 
 </Project>

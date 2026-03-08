@@ -15,7 +15,7 @@ namespace Core.Base
         public async Task<ChangedResponse> CreateAsync(TCreateRequest request)
         {
             await ConfirmValidCreateDataAsync(request);
-            var entity = MapFromCreateToEntity(request);
+            var entity = await MapFromCreateToEntityAsync(request);
             await _uow.Repository<TEntity>().AddAsync(entity);
             await _uow.SaveChangesAsync();
             return new ChangedResponse
@@ -28,7 +28,7 @@ namespace Core.Base
         {
             var entity = await _uow.Repository<TEntity>()
                 .GetFirstAsync(e => e.Id == id) 
-                ?? throw new NotFoundException("Thực thể cần xóa không tồn tại");
+                ?? throw new NotFoundException("Entity to delete does not exist");
             await _uow.Repository<TEntity>().DeleteAsync(entity);
             await _uow.SaveChangesAsync();
             return new ChangedResponse
@@ -55,7 +55,7 @@ namespace Core.Base
         {
             var entity = await _uow.Repository<TEntity>()
                 .GetFirstAsync(e => e.Id == id)
-                ?? throw new NotFoundException("Thực thể cần cập nhật không tồn tại");
+                ?? throw new NotFoundException("Entity to update does not exist");
             await ConfirmValidUpdateDataAsync(entity, request);
             await UpdateEntityAsync(entity, request);
             await _uow.Repository<TEntity>().UpdateAsync(entity);
@@ -68,7 +68,7 @@ namespace Core.Base
 
         protected abstract Task ConfirmValidCreateDataAsync(TCreateRequest request);
         protected abstract Task ConfirmValidUpdateDataAsync(TEntity entity, TUpdateRequest request);
-        protected abstract TEntity MapFromCreateToEntity(TCreateRequest request);
+        protected abstract Task<TEntity> MapFromCreateToEntityAsync(TCreateRequest request);
         protected abstract TListItemDto MapFromEntityToListItem(TEntity entity);
         protected abstract TDetailDto MapFromEntityToDetail(TEntity entity);
         protected abstract Task UpdateEntityAsync(TEntity entity, TUpdateRequest request);

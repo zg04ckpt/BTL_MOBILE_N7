@@ -64,7 +64,7 @@ namespace API.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateUserRequest request)
         {
             var result = await _userService.UpdateAsync(id, request);
             return Ok(ApiResponse.Success("Cập nhật thông tin thành công", result));

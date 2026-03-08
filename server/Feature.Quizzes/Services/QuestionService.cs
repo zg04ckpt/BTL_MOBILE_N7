@@ -1,0 +1,248 @@
+using Core.Base;
+using Core.Exceptions;
+using Core.Interfaces;
+using Core.Utilities;
+using Feature.Quizzes.Entities;
+using Feature.Quizzes.Enums;
+using Feature.Quizzes.Interfaces;
+using Feature.Quizzes.Models;
+using System.Linq.Expressions;
+using System.Text.Json;
+
+namespace Feature.Quizzes.Services
+{
+    public class QuestionService
+        : CrudWithPagingService<Question, CreateQuestionRequest, UpdateQuestionRequest, QuestionListItemDto, QuestionDetailDto, SearchQuestionRequest>, IQuestionService
+    {
+        private readonly IStorageService _storageService;
+
+        public QuestionService(IUnitOfWork uow, IStorageService storageService) : base(uow)
+        {
+            _storageService = storageService;
+        }
+
+        protected override async Task ConfirmValidCreateDataAsync(CreateQuestionRequest request)
+        {
+            var topicRepository = _uow.Repository<Topic>();
+            
+            if (!await topicRepository.ExistsAsync(t => t.Id == request.TopicId))
+            {
+                throw new BadRequestException("Topic does not exist");
+            }
+
+            ValidateAnswers(request.Type, request.CorrectAnswers, request.StringAnswers);
+        }
+
+        protected override async Task ConfirmValidUpdateDataAsync(Question entity, UpdateQuestionRequest request)
+        {
+            var topicRepository = _uow.Repository<Topic>();
+            
+            if (!await topicRepository.ExistsAsync(t => t.Id == request.TopicId))
+            {
+                throw new BadRequestException("Topic does not exist");
+            }
+
+            ValidateAnswers(request.Type, request.CorrectAnswers, request.StringAnswers);
+        }
+
+        protected override Expression<Func<Question, object>> GetOrderBy(string? orderBy)
+        {
+            return orderBy?.ToLower() switch
+            {
+                "createdat" => q => q.CreatedAt,
+                "level" => q => q.Level,
+                "type" => q => q.Type,
+                "status" => q => q.Status,
+                _ => q => q.Id
+            };
+        }
+
+        protected override Expression<Func<Question, bool>> GetPagingFilter(SearchQuestionRequest request)
+        {
+            return q =>
+                (string.IsNullOrEmpty(request.StringContent) || q.StringContent.Contains(request.StringContent)) &&
+                (!request.TopicId.HasValue || q.TopicId == request.TopicId.Value) &&
+                (string.IsNullOrEmpty(request.Type) || q.Type.ToString() == request.Type) &&
+                (string.IsNullOrEmpty(request.Level) || q.Level.ToString() == request.Level) &&
+                (string.IsNullOrEmpty(request.Status) || q.Status.ToString() == request.Status);
+        }
+
+        protected override async Task<Question> MapFromCreateToEntityAsync(CreateQuestionRequest request)
+        {
+            var answers = new Answers
+            {
+                CorrectAnswers = request.CorrectAnswers,
+                StringAnswers = request.StringAnswers
+            };
+
+            var slug = StringUtil.ToSlug(request.StringContent);
+
+            var imageUrl = string.Empty;
+            var audioUrl = string.Empty;
+            var videoUrl = string.Empty;
+
+            if (request.Image != null)
+            {
+                imageUrl = await _storageService.SaveAsync(request.Image);
+            }
+
+            if (request.Audio != null)
+            {
+                audioUrl = await _storageService.SaveAsync(request.Audio);
+            }
+
+            if (request.Video != null)
+            {
+                videoUrl = await _storageService.SaveAsync(request.Video);
+            }
+
+            return new Question
+            {
+                Slug = slug,
+                StringContent = request.StringContent,
+                ImageUrl = imageUrl,
+                AudioUrl = audioUrl,
+                VideoUrl = videoUrl,
+                AnswerJsonData = JsonSerializer.Serialize(answers),
+                Type = request.Type,
+                Level = request.Level,
+                Status = QuestionStatus.Draft,
+                CreatedAt = DateTime.UtcNow,
+                TopicId = request.TopicId
+            };
+        }
+
+        protected override QuestionDetailDto MapFromEntityToDetail(Question entity)
+        {
+            var answers = JsonSerializer.Deserialize<Answers>(entity.AnswerJsonData);
+
+            return new QuestionDetailDto
+            {
+                Id = entity.Id,
+                Slug = entity.Slug,
+                StringContent = entity.StringContent,
+                ImageUrl = entity.ImageUrl,
+                AudioUrl = entity.AudioUrl,
+                VideoUrl = entity.VideoUrl,
+                Type = entity.Type,
+                Level = entity.Level,
+                Status = entity.Status,
+                TopicId = entity.TopicId,
+                TopicName = entity.Topic?.Name ?? string.Empty,
+                CreatedAt = entity.CreatedAt,
+                CorrectAnswers = answers?.CorrectAnswers ?? new List<string>(),
+                StringAnswers = answers?.StringAnswers ?? new List<string>()
+            };
+        }
+
+        protected override QuestionListItemDto MapFromEntityToListItem(Question entity)
+        {
+            return new QuestionListItemDto
+            {
+                Id = entity.Id,
+                Slug = entity.Slug,
+                StringContent = entity.StringContent,
+                Type = entity.Type,
+                Level = entity.Level,
+                Status = entity.Status,
+                TopicName = entity.Topic?.Name ?? string.Empty,
+                CreatedAt = entity.CreatedAt
+            };
+        }
+
+        protected override async Task UpdateEntityAsync(Question entity, UpdateQuestionRequest request)
+        {
+            var answers = new Answers
+            {
+                CorrectAnswers = request.CorrectAnswers,
+                StringAnswers = request.StringAnswers
+            };
+
+            entity.Slug = StringUtil.ToSlug(request.StringContent);
+            entity.StringContent = request.StringContent;
+            entity.AnswerJsonData = JsonSerializer.Serialize(answers);
+            entity.Type = request.Type;
+            entity.Level = request.Level;
+            entity.Status = request.Status;
+            entity.TopicId = request.TopicId;
+
+            if (request.Image != null)
+            {
+                if (!string.IsNullOrEmpty(entity.ImageUrl))
+                {
+                    await _storageService.DeleteAsync(entity.ImageUrl);
+                }
+                entity.ImageUrl = await _storageService.SaveAsync(request.Image);
+            }
+
+            if (request.Audio != null)
+            {
+                if (!string.IsNullOrEmpty(entity.AudioUrl))
+                {
+                    await _storageService.DeleteAsync(entity.AudioUrl);
+                }
+                entity.AudioUrl = await _storageService.SaveAsync(request.Audio);
+            }
+
+            if (request.Video != null)
+            {
+                if (!string.IsNullOrEmpty(entity.VideoUrl))
+                {
+                    await _storageService.DeleteAsync(entity.VideoUrl);
+                }
+                entity.VideoUrl = await _storageService.SaveAsync(request.Video);
+            }
+        }
+
+        private void ValidateAnswers(QuestionType type, List<string> correctAnswers, List<string> stringAnswers)
+        {
+            switch (type)
+            {
+                case QuestionType.TrueFalse:
+                    if (stringAnswers.Count != 2)
+                    {
+                        throw new BadRequestException("True/False question must have exactly 2 answers");
+                    }
+                    if (correctAnswers.Count != 1)
+                    {
+                        throw new BadRequestException("True/False question must have exactly 1 correct answer");
+                    }
+                    break;
+
+                case QuestionType.SingleChoice:
+                    if (stringAnswers.Count < 2)
+                    {
+                        throw new BadRequestException("Single Choice question must have at least 2 answers");
+                    }
+                    if (correctAnswers.Count != 1)
+                    {
+                        throw new BadRequestException("Single Choice question must have exactly 1 correct answer");
+                    }
+                    break;
+
+                case QuestionType.MultipleChoice:
+                    if (stringAnswers.Count < 2)
+                    {
+                        throw new BadRequestException("Multiple Choice question must have at least 2 answers");
+                    }
+                    if (correctAnswers.Count < 1)
+                    {
+                        throw new BadRequestException("Multiple Choice question must have at least 1 correct answer");
+                    }
+                    if (correctAnswers.Count >= stringAnswers.Count)
+                    {
+                        throw new BadRequestException("Number of correct answers must be less than total answers");
+                    }
+                    break;
+            }
+
+            foreach (var correctAnswer in correctAnswers)
+            {
+                if (!stringAnswers.Contains(correctAnswer))
+                {
+                    throw new BadRequestException($"Correct answer '{correctAnswer}' is not in the answer list");
+                }
+            }
+        }
+    }
+}

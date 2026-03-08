@@ -1,4 +1,4 @@
-﻿namespace Feature.Quiz.Enums
+﻿namespace Feature.Quizzes.Enums
 {
     public enum QuestionLevel
     {
