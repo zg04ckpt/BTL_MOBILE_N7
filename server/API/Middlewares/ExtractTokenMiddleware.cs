@@ -8,7 +8,6 @@ namespace API.Middlewares
             var token = context.Request.Cookies["aToken"];
             if (!string.IsNullOrEmpty(token))
             {
-                Console.WriteLine("Cookie: " + token);
                 context.Request.Headers.Authorization = "Bearer " + token;
             }
             await next(context);

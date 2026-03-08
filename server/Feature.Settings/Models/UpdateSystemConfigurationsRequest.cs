@@ -15,6 +15,10 @@ namespace Feature.Settings.Models
         [MaxLength(20, ErrorMessage = "App version cannot exceed 20 characters")]
         [RegularExpression(@"^\d+\.\d+\.\d+$", ErrorMessage = "Version must be in format X.Y.Z (e.g., 1.0.0)")]
         public string RequiredAppVersion { get; set; }
+
+        [Required(ErrorMessage = "Login live time is required")]
+        [Range(1, 43200, ErrorMessage = "Login live time must be between 1 and 43200 minutes (30 days)")]
+        public int LoginLiveTime { get; set; }
         
         // Game Settings
         [Required(ErrorMessage = "Question time limit is required")]

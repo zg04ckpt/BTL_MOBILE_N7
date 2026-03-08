@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
@@ -15,10 +16,12 @@ namespace Feature.Quizzes.Services
         : CrudWithPagingService<Question, CreateQuestionRequest, UpdateQuestionRequest, QuestionListItemDto, QuestionDetailDto, SearchQuestionRequest>, IQuestionService
     {
         private readonly IStorageService _storageService;
+        private readonly ILogService<QuestionService> _logService;
 
-        public QuestionService(IUnitOfWork uow, IStorageService storageService) : base(uow)
+        public QuestionService(IUnitOfWork uow, IStorageService storageService, ILogService<QuestionService> logService) : base(uow)
         {
             _storageService = storageService;
+            _logService = logService;
         }
 
         protected override async Task ConfirmValidCreateDataAsync(CreateQuestionRequest request)
@@ -27,6 +30,7 @@ namespace Feature.Quizzes.Services
             
             if (!await topicRepository.ExistsAsync(t => t.Id == request.TopicId))
             {
+                _logService.LogError($"Create question failed: Topic #{request.TopicId} not found");
                 throw new BadRequestException("Topic does not exist");
             }
 
@@ -39,6 +43,7 @@ namespace Feature.Quizzes.Services
             
             if (!await topicRepository.ExistsAsync(t => t.Id == request.TopicId))
             {
+                _logService.LogError($"Update question failed: Topic #{request.TopicId} not found");
                 throw new BadRequestException("Topic does not exist");
             }
 
@@ -75,30 +80,13 @@ namespace Feature.Quizzes.Services
                 StringAnswers = request.StringAnswers
             };
 
-            var slug = StringUtil.ToSlug(request.StringContent);
-
-            var imageUrl = string.Empty;
-            var audioUrl = string.Empty;
-            var videoUrl = string.Empty;
-
-            if (request.Image != null)
-            {
-                imageUrl = await _storageService.SaveAsync(request.Image);
-            }
-
-            if (request.Audio != null)
-            {
-                audioUrl = await _storageService.SaveAsync(request.Audio);
-            }
-
-            if (request.Video != null)
-            {
-                videoUrl = await _storageService.SaveAsync(request.Video);
-            }
+            var imageUrl = request.Image != null ? await _storageService.SaveAsync(request.Image) : string.Empty;
+            var audioUrl = request.Audio != null ? await _storageService.SaveAsync(request.Audio) : string.Empty;
+            var videoUrl = request.Video != null ? await _storageService.SaveAsync(request.Video) : string.Empty;
 
             return new Question
             {
-                Slug = slug,
+                Slug = StringUtil.ToSlug(request.StringContent),
                 StringContent = request.StringContent,
                 ImageUrl = imageUrl,
                 AudioUrl = audioUrl,
@@ -201,10 +189,12 @@ namespace Feature.Quizzes.Services
                 case QuestionType.TrueFalse:
                     if (stringAnswers.Count != 2)
                     {
+                        _logService.LogError($"Validate failed: TrueFalse needs 2 answers, got {stringAnswers.Count}");
                         throw new BadRequestException("True/False question must have exactly 2 answers");
                     }
                     if (correctAnswers.Count != 1)
                     {
+                        _logService.LogError($"Validate failed: TrueFalse needs 1 correct, got {correctAnswers.Count}");
                         throw new BadRequestException("True/False question must have exactly 1 correct answer");
                     }
                     break;
@@ -212,10 +202,12 @@ namespace Feature.Quizzes.Services
                 case QuestionType.SingleChoice:
                     if (stringAnswers.Count < 2)
                     {
+                        _logService.LogError($"Validate failed: SingleChoice needs 2+ answers, got {stringAnswers.Count}");
                         throw new BadRequestException("Single Choice question must have at least 2 answers");
                     }
                     if (correctAnswers.Count != 1)
                     {
+                        _logService.LogError($"Validate failed: SingleChoice needs 1 correct, got {correctAnswers.Count}");
                         throw new BadRequestException("Single Choice question must have exactly 1 correct answer");
                     }
                     break;
@@ -223,14 +215,17 @@ namespace Feature.Quizzes.Services
                 case QuestionType.MultipleChoice:
                     if (stringAnswers.Count < 2)
                     {
+                        _logService.LogError($"Validate failed: MultipleChoice needs 2+ answers, got {stringAnswers.Count}");
                         throw new BadRequestException("Multiple Choice question must have at least 2 answers");
                     }
                     if (correctAnswers.Count < 1)
                     {
+                        _logService.LogError($"Validate failed: MultipleChoice needs 1+ correct, got {correctAnswers.Count}");
                         throw new BadRequestException("Multiple Choice question must have at least 1 correct answer");
                     }
                     if (correctAnswers.Count >= stringAnswers.Count)
                     {
+                        _logService.LogError($"Validate failed: Correct ({correctAnswers.Count}) >= Total ({stringAnswers.Count})");
                         throw new BadRequestException("Number of correct answers must be less than total answers");
                     }
                     break;
@@ -240,6 +235,7 @@ namespace Feature.Quizzes.Services
             {
                 if (!stringAnswers.Contains(correctAnswer))
                 {
+                    _logService.LogError($"Validate failed: Correct answer '{correctAnswer}' not in list");
                     throw new BadRequestException($"Correct answer '{correctAnswer}' is not in the answer list");
                 }
             }

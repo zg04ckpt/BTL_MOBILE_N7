@@ -6,6 +6,7 @@ namespace Feature.Settings.Models
         public bool MaintenanceMode { get; set; }
         public string WhitelistIPs { get; set; }
         public string RequiredAppVersion { get; set; }
+        public int LoginLiveTime { get; set; }
         
         // Game Settings
         public int QuestionTimeLimit { get; set; }

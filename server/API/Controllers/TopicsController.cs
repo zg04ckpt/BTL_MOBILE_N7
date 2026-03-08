@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Quizzes.Interfaces;
 using Feature.Quizzes.Models;
@@ -11,10 +12,12 @@ namespace API.Controllers
     public class TopicsController : ControllerBase
     {
         private readonly ITopicService _topicService;
+        private readonly ILogService<TopicsController> _logService;
 
-        public TopicsController(ITopicService topicService)
+        public TopicsController(ITopicService topicService, ILogService<TopicsController> logService)
         {
             _topicService = topicService;
+            _logService = logService;
         }
 
         [HttpGet]
@@ -40,6 +43,7 @@ namespace API.Controllers
             
             if (topic == null)
             {
+                _logService.LogError($"[API] Topic not found: #{id}");
                 return NotFound(ApiResponse.Failure("Topic not found"));
             }
 

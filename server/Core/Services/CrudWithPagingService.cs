@@ -15,7 +15,7 @@ namespace Core.Base
         {
         }
 
-        public async Task<Paginated<TListItemDto>> GetPagingAsync(TSearchRequest request)
+        public virtual async Task<Paginated<TListItemDto>> GetPagingAsync(TSearchRequest request)
         { 
             var entities = await _uow.Repository<TEntity>().GetAllAsync(
                 predicate: GetPagingFilter(request),

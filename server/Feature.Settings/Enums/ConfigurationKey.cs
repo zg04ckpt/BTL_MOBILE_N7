@@ -6,6 +6,7 @@ namespace Feature.Settings.Enums
         MaintenanceMode,
         WhitelistIPs,
         RequiredAppVersion,
+        LoginLiveTime,
         
         // Game Settings
         QuestionTimeLimit,

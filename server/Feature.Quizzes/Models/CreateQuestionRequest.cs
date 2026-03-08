@@ -6,8 +6,8 @@ namespace Feature.Quizzes.Models
 {
     public class CreateQuestionRequest
     {
-        [Required(ErrorMessage = "N?i dung câu h?i là b?t bu?c")]
-        [MaxLength(1000, ErrorMessage = "N?i dung không ???c v??t quá 1000 ký t?")]
+        [Required(ErrorMessage = "Question content is required")]
+        [MaxLength(1000, ErrorMessage = "Content must not exceed 1000 characters")]
         public string StringContent { get; set; }
 
         public IFormFile? Image { get; set; }
@@ -16,22 +16,22 @@ namespace Feature.Quizzes.Models
 
         public IFormFile? Video { get; set; }
 
-        [Required(ErrorMessage = "Lo?i câu h?i là b?t bu?c")]
+        [Required(ErrorMessage = "Question type is required")]
         public QuestionType Type { get; set; }
 
-        [Required(ErrorMessage = "?? khó là b?t bu?c")]
+        [Required(ErrorMessage = "Question level is required")]
         public QuestionLevel Level { get; set; }
 
-        [Required(ErrorMessage = "Topic ID là b?t bu?c")]
-        [Range(1, int.MaxValue, ErrorMessage = "Topic ID ph?i l?n h?n 0")]
+        [Required(ErrorMessage = "Topic ID is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Topic ID must be greater than 0")]
         public int TopicId { get; set; }
 
-        [Required(ErrorMessage = "Câu tr? l?i ?úng là b?t bu?c")]
-        [MinLength(1, ErrorMessage = "Ph?i có ít nh?t 1 câu tr? l?i ?úng")]
+        [Required(ErrorMessage = "Correct answers are required")]
+        [MinLength(1, ErrorMessage = "Must have at least 1 correct answer")]
         public List<string> CorrectAnswers { get; set; }
 
-        [Required(ErrorMessage = "Danh sách ?áp án là b?t bu?c")]
-        [MinLength(2, ErrorMessage = "Ph?i có ít nh?t 2 ?áp án")]
+        [Required(ErrorMessage = "Answer list is required")]
+        [MinLength(2, ErrorMessage = "Must have at least 2 answers")]
         public List<string> StringAnswers { get; set; }
     }
 }

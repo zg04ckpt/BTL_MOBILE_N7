@@ -37,7 +37,7 @@ namespace Core.Base
             };
         }
 
-        public async Task<IEnumerable<TListItemDto>> GetAllAsync()
+        public virtual async Task<IEnumerable<TListItemDto>> GetAllAsync()
         {
             var entities = await _uow.Repository<TEntity>().GetAllAsync(
                 predicate: e => true);

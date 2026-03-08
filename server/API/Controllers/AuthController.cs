@@ -1,4 +1,7 @@
-﻿using Core.Models;
+﻿using CNLib.Services.Logs;
+using Core.Models;
+using Feature.Settings.Helpers;
+using Feature.Settings.Interfaces;
 using Feature.Users.Interfaces;
 using Feature.Users.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -10,16 +13,24 @@ namespace API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ISystemConfigurationService _configService;
+        private readonly ILogService<AuthController> _logService;
 
-        public AuthController(IAuthService authService)
+        public AuthController(
+            IAuthService authService, 
+            ISystemConfigurationService configService,
+            ILogService<AuthController> logService)
         {
             _authService = authService;
+            _configService = configService;
+            _logService = logService;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> LogIn([FromBody] LoginRequest request)
         {
-            var loginRes = await _authService.LogInAsync(request);
+            var loginLiveTime = await ConfigHelper.GetLoginLiveTimeAsync(_configService);
+            var loginRes = await _authService.LogInAsync(request, loginLiveTime);
 
             Response.Cookies.Append("aToken", loginRes.AccessToken, new CookieOptions
             {
@@ -27,9 +38,9 @@ namespace API.Controllers
                 HttpOnly = true,
                 SameSite = SameSiteMode.None,
                 Secure = true,
-                MaxAge = TimeSpan.FromMinutes(25200)
+                MaxAge = TimeSpan.FromMinutes(loginLiveTime)
             });
-
+            
             return Ok(ApiResponse.Success(loginRes));
         }
 

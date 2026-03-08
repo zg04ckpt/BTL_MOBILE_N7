@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
@@ -12,8 +13,11 @@ namespace Feature.Quizzes.Services
     public class TopicService
         : CrudWithPagingService<Topic, CreateTopicRequest, UpdateTopicRequest, TopicListItemDto, TopicDetailDto, SearchTopicRequest>, ITopicService
     {
-        public TopicService(IUnitOfWork uow) : base(uow)
+        private readonly ILogService<TopicService> _logService;
+
+        public TopicService(IUnitOfWork uow, ILogService<TopicService> logService) : base(uow)
         {
+            _logService = logService;
         }
 
         protected override async Task ConfirmValidCreateDataAsync(CreateTopicRequest request)
@@ -22,6 +26,7 @@ namespace Feature.Quizzes.Services
 
             if (await topicRepository.ExistsAsync(t => t.Name == request.Name))
             {
+                _logService.LogError($"Create topic failed: Name exists - {request.Name}");
                 throw new BadRequestException("Topic name already exists");
             }
         }
@@ -33,6 +38,7 @@ namespace Feature.Quizzes.Services
             if (entity.Name != request.Name 
                 && await topicRepository.ExistsAsync(t => t.Id != entity.Id && t.Name == request.Name))
             {
+                _logService.LogError($"Update topic failed: Name exists - {request.Name}");
                 throw new BadRequestException("Topic name already exists");
             }
         }
@@ -53,14 +59,12 @@ namespace Feature.Quizzes.Services
 
         protected override Task<Topic> MapFromCreateToEntityAsync(CreateTopicRequest request)
         {
-            var slug = StringUtil.ToSlug(request.Name);
-
             var topic = new Topic
             {
                 Name = request.Name,
-                Slug = slug
+                Slug = StringUtil.ToSlug(request.Name)
             };
-
+            
             return Task.FromResult(topic);
         }
 
@@ -90,7 +94,7 @@ namespace Feature.Quizzes.Services
         {
             entity.Name = request.Name;
             entity.Slug = StringUtil.ToSlug(request.Name);
-
+            
             return Task.CompletedTask;
         }
     }

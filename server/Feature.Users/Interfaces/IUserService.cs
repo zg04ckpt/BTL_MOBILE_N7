@@ -9,5 +9,6 @@ namespace Feature.Users.Interfaces
         : ICrudWithPagingService<User, CreateUserRequest, UpdateUserRequest, UserListItemDto, UserDetailDto, SearchUserRequest>
     {
         Task<UserProfileDto> GetProfileAsync(int userId);
+        Task<ChangedResponse> UpdateProfileAsync(int userId, UpdateProfileRequest request);
     }
 }

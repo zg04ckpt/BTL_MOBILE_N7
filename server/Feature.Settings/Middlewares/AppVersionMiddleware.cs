@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Feature.Settings.Helpers;
 using Feature.Settings.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -7,10 +8,12 @@ namespace Feature.Settings.Middlewares
     public class AppVersionMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogService<AppVersionMiddleware> _logService;
 
-        public AppVersionMiddleware(RequestDelegate next)
+        public AppVersionMiddleware(RequestDelegate next, ILogService<AppVersionMiddleware> logService)
         {
             _next = next;
+            _logService = logService;
         }
 
         public async Task InvokeAsync(HttpContext context, ISystemConfigurationService configService)
@@ -33,6 +36,8 @@ namespace Feature.Settings.Middlewares
 
                 if (!ConfigHelper.IsVersionAllowed(clientVersion, requiredVersion))
                 {
+                    _logService.LogInfo($"Version blocked: {clientVersion} < {requiredVersion}");
+                    
                     context.Response.StatusCode = StatusCodes.Status426UpgradeRequired;
                     context.Response.ContentType = "application/json";
                     

@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Base;
 using Core.Interfaces;
 using Feature.Settings.Entities;
@@ -10,21 +11,25 @@ namespace Feature.Settings.Services
 {
     public class SystemConfigurationService : BaseService, ISystemConfigurationService
     {
-        public SystemConfigurationService(IUnitOfWork uow) : base(uow)
+        private readonly ILogService<SystemConfigurationService> _logService;
+
+        public SystemConfigurationService(IUnitOfWork uow, ILogService<SystemConfigurationService> logService) : base(uow)
         {
+            _logService = logService;
         }
 
         public async Task<SystemConfigurationsDto> GetSystemConfigurationsAsync()
         {
             var configs = await _uow.Repository<SystemConfiguration>().GetAllAsync(c => true);
             var configDict = configs.ToDictionary(c => c.Key, c => c.Value);
-
+            
             return new SystemConfigurationsDto
             {
                 // General Settings
                 MaintenanceMode = GetBoolValue(configDict, ConfigurationKey.MaintenanceMode.ToString(), false),
                 WhitelistIPs = GetStringValue(configDict, ConfigurationKey.WhitelistIPs.ToString(), string.Empty),
                 RequiredAppVersion = GetStringValue(configDict, ConfigurationKey.RequiredAppVersion.ToString(), "1.0.0"),
+                LoginLiveTime = GetIntValue(configDict, ConfigurationKey.LoginLiveTime.ToString(), 10080),
                 
                 // Game Settings
                 QuestionTimeLimit = GetIntValue(configDict, ConfigurationKey.QuestionTimeLimit.ToString(), 30),
@@ -53,6 +58,10 @@ namespace Feature.Settings.Services
                 { 
                     ConfigurationKey.RequiredAppVersion.ToString(), 
                     (request.RequiredAppVersion, "Minimum required app version")
+                },
+                { 
+                    ConfigurationKey.LoginLiveTime.ToString(), 
+                    (request.LoginLiveTime.ToString(), "Login session live time in minutes")
                 },
                 
                 // Game Settings
@@ -91,8 +100,10 @@ namespace Feature.Settings.Services
             var config = await _uow.Repository<SystemConfiguration>().GetFirstAsync(c => c.Key == key);
             
             if (config == null)
+            {
                 return null;
-
+            }
+            
             return new ConfigurationItemDto
             {
                 Id = config.Id,
@@ -158,7 +169,9 @@ namespace Feature.Settings.Services
             var count = await repository.CountAsync();
 
             if (count > 0)
+            {
                 return;
+            }
 
             var defaultConfigs = new[]
             {
@@ -181,6 +194,13 @@ namespace Feature.Settings.Services
                     Key = ConfigurationKey.RequiredAppVersion.ToString(),
                     Value = "1.0.0",
                     Description = "Minimum required app version",
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new SystemConfiguration
+                {
+                    Key = ConfigurationKey.LoginLiveTime.ToString(),
+                    Value = "10080",
+                    Description = "Login session live time in minutes (default: 7 days)",
                     UpdatedAt = DateTime.UtcNow
                 },
                 new SystemConfiguration
@@ -222,6 +242,8 @@ namespace Feature.Settings.Services
 
             await repository.AddAsync(defaultConfigs);
             await _uow.SaveChangesAsync();
+            
+            _logService.LogSuccess($"Default configs initialized: {defaultConfigs.Length} items");
         }
 
         private static bool GetBoolValue(Dictionary<string, string> dict, string key, bool defaultValue)

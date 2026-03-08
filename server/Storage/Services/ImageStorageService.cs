@@ -1,4 +1,5 @@
-﻿using Core.Exceptions;
+﻿using CNLib.Services.Logs;
+using Core.Exceptions;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 
@@ -6,13 +7,20 @@ namespace Storage.Services
 {
     public class ImageStorageService : IStorageService
     {
+        private readonly ILogService<ImageStorageService> _logService;
+
+        public ImageStorageService(ILogService<ImageStorageService> logService)
+        {
+            _logService = logService;
+        }
+
         public Task DeleteAsync(params string[] paths)
         {
             if (paths == null || paths.Length == 0)
             {
                 return Task.CompletedTask;
             }
-
+            
             var uploadFolder = Path.Combine(AppContext.BaseDirectory, "uploads");
             var errors = new List<string>();
 
@@ -34,6 +42,7 @@ namespace Storage.Services
                     }
                     catch (Exception ex)
                     {
+                        _logService.LogError($"Delete failed: {fileName}", ex.Message);
                         throw new ServerErrorException($"Cannot delete file {fileName}: {ex.Message}");
                     }
                 }
@@ -45,6 +54,7 @@ namespace Storage.Services
 
             if (errors.Any())
             {
+                _logService.LogError($"Files not found: {string.Join(", ", errors)}");
                 throw new NotFoundException($"Files not found: {string.Join(", ", errors)}");
             }
 
@@ -55,12 +65,14 @@ namespace Storage.Services
         {
             if (file == null || file.Length == 0)
             {
+                _logService.LogError("Save failed: Invalid file");
                 throw new BadRequestException("Invalid file");
             }
 
             const long maxSize = 5 * 1024 * 1024;
             if (file.Length > maxSize)
             {
+                _logService.LogError($"Save failed: File too large - {file.Length} bytes");
                 throw new BadRequestException("File too large (max 5MB)");
             }
 
@@ -68,6 +80,7 @@ namespace Storage.Services
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(extension))
             {
+                _logService.LogError($"Save failed: Invalid format - {extension}");
                 throw new BadRequestException("Invalid image format");
             }
 
@@ -85,7 +98,7 @@ namespace Storage.Services
             {
                 await file.CopyToAsync(stream);
             }
-
+            
             return $"/uploads/{fileName}";
         }
     }

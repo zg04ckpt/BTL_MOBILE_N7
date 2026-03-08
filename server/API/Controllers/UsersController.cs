@@ -1,4 +1,5 @@
-﻿using Core.Models;
+﻿using CNLib.Services.Logs;
+using Core.Models;
 using Feature.Users.Interfaces;
 using Feature.Users.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -12,10 +13,12 @@ namespace API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly ILogService<UsersController> _logService;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, ILogService<UsersController> logService)
         {
             _userService = userService;
+            _logService = logService;
         }
 
         [HttpGet]
@@ -39,6 +42,7 @@ namespace API.Controllers
             
             if (user == null)
             {
+                _logService.LogError($"[API] User not found: #{id}");
                 return NotFound(ApiResponse.Failure("Người dùng không tồn tại"));
             }
 
@@ -54,6 +58,16 @@ namespace API.Controllers
             return Ok(ApiResponse.Success(profile));
         }
 
+        [HttpPut("profile")]
+        [Authorize]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
+        public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileRequest request)
+        {
+            var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _userService.UpdateProfileAsync(id, request);
+            return Ok(ApiResponse.Success("Cập nhật thông tin thành công", result));
+        }
 
         [HttpPost] 
         public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
@@ -64,6 +78,8 @@ namespace API.Controllers
 
 
         [HttpPut("{id}")]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
         public async Task<IActionResult> Update(int id, [FromForm] UpdateUserRequest request)
         {
             var result = await _userService.UpdateAsync(id, request);

@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CNLib\CNLib.csproj" />
     <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
 ﻿
+using CNLib.Services.Logs;
 using Core.Exceptions;
 using Core.Models;
 using Core.Utilities;
@@ -8,9 +9,9 @@ namespace API.Middlewares
 {
     public class GlobalExceptionMiddleware : IMiddleware
     {
-        private readonly ILogger<GlobalExceptionMiddleware> _logger;
+        private readonly ILogService<GlobalExceptionMiddleware> _logger;
 
-        public GlobalExceptionMiddleware(ILogger<GlobalExceptionMiddleware> logger)
+        public GlobalExceptionMiddleware(ILogService<GlobalExceptionMiddleware> logger)
         {
             _logger = logger;
         }
@@ -23,27 +24,32 @@ namespace API.Middlewares
             }
             catch (BadRequestException ex)
             {
+                _logger.LogError($"BadRequest: {ex.Message}", $"Path: {context.Request.Path}");
                 await HandleExceptionAsync(context, StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (NotFoundException ex)
             {
+                _logger.LogError($"NotFound: {ex.Message}", $"Path: {context.Request.Path}");
                 await HandleExceptionAsync(context, StatusCodes.Status404NotFound, ex.Message);
             }
             catch (ForbiddenException ex)
             {
+                _logger.LogError($"Forbidden: {ex.Message}", $"Path: {context.Request.Path}");
                 await HandleExceptionAsync(context, StatusCodes.Status403Forbidden, ex.Message);
             }
             catch (UnauthorizedException ex)
             {
+                _logger.LogError($"Unauthorized: {ex.Message}", $"Path: {context.Request.Path}");
                 await HandleExceptionAsync(context, StatusCodes.Status401Unauthorized, ex.Message);
             }
             catch (ServerErrorException ex)
             {
+                _logger.LogError($"ServerError: {ex.Message}", $"Path: {context.Request.Path}");
                 await HandleExceptionAsync(context, StatusCodes.Status500InternalServerError, ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unknown error: {Message}", ex.Message);
+                _logger.LogError($"Unknown error: {ex.Message}", $"Path: {context.Request.Path}, StackTrace: {ex.StackTrace}");
                 await HandleExceptionAsync(context, StatusCodes.Status500InternalServerError, StringUtil.ApiMessages.UnknownError);
             }
         }

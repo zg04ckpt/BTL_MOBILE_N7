@@ -1,4 +1,5 @@
-﻿using Data;
+﻿using CNLib.Services.Logs;
+using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -8,12 +9,12 @@ namespace Storage.Services
 {
     public class ImageCleanupService : BackgroundService
     {
-        private readonly ILogger<ImageCleanupService> _logger;
+        private readonly ILogService<ImageCleanupService> _logger;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly TimeSpan _interval = TimeSpan.FromHours(1);
 
         public ImageCleanupService(
-            ILogger<ImageCleanupService> logger,
+            ILogService<ImageCleanupService> logger,
             IServiceScopeFactory serviceScopeFactory)
         {
             _logger = logger;
@@ -22,25 +23,25 @@ namespace Storage.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Image Cleanup Service started");
+            _logger.LogInfo("Image Cleanup Service started");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    _logger.LogInformation("Starting cleanup of unused images at {Time}", DateTime.UtcNow);
+                    _logger.LogInfo($"Starting cleanup of unused images at {DateTime.Now}");
                     await CleanupUnusedImagesAsync();
-                    _logger.LogInformation("Completed cleanup of unused images at {Time}", DateTime.UtcNow);
+                    _logger.LogInfo($"Completed cleanup of unused images at {DateTime.Now}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error while cleaning up unused images");
+                    _logger.LogError("Error while cleaning up unused images", ex.Message);
                 }
 
                 await Task.Delay(_interval, stoppingToken);
             }
 
-            _logger.LogInformation("Image Cleanup Service stopped");
+            _logger.LogInfo("Image Cleanup Service stopped");
         }
 
         private async Task CleanupUnusedImagesAsync()
@@ -63,18 +64,18 @@ namespace Storage.Services
                 .Where(name => !string.IsNullOrEmpty(name))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            _logger.LogInformation("Found {Count} images in use", usedFileNames.Count);
+            _logger.LogInfo($"Found {usedFileNames.Count} images in use");
 
             // Get all files in uploads folder
             var uploadFolder = Path.Combine(AppContext.BaseDirectory, "uploads");
             if (!Directory.Exists(uploadFolder))
             {
-                _logger.LogWarning("Uploads folder does not exist");
+                _logger.LogError("Uploads folder does not exist");
                 return;
             }
 
             var allFiles = Directory.GetFiles(uploadFolder);
-            _logger.LogInformation("Found {Count} files in uploads folder", allFiles.Length);
+            _logger.LogInfo($"Found {allFiles.Length} files in uploads folder");
 
             var deletedCount = 0;
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -97,22 +98,22 @@ namespace Storage.Services
                     {
                         File.Delete(filePath);
                         deletedCount++;
-                        _logger.LogInformation("Deleted unused file: {FileName}", fileName);
+                        _logger.LogInfo($"Deleted unused file: {fileName}");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Cannot delete file {FileName}", fileName);
+                        _logger.LogError($"Cannot delete file {fileName}", ex.Message);
                     }
                 }
             }
 
             if (deletedCount > 0)
             {
-                _logger.LogInformation("Deleted {Count} unused image files", deletedCount);
+                _logger.LogInfo($"Deleted {deletedCount} unused image files");
             }
             else
             {
-                _logger.LogInformation("No image files need to be deleted");
+                _logger.LogInfo("No image files need to be deleted");
             }
         }
     }

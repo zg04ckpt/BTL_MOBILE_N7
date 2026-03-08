@@ -4,7 +4,7 @@ using Feature.Users.Entities;
 using Feature.Users.Enums;
 using Feature.Settings.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using CNLib.Services.Logs;
 
 namespace Data
 {
@@ -12,13 +12,13 @@ namespace Data
     {
         private readonly AppDbContext _context;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<DataInitializer> _logger;
+        private readonly ILogService<DataInitializer> _logger;
         private readonly ISystemConfigurationService _configurationService;
 
         public DataInitializer(
             AppDbContext context, 
-            IUnitOfWork unitOfWork, 
-            ILogger<DataInitializer> logger,
+            IUnitOfWork unitOfWork,
+            ILogService<DataInitializer> logger,
             ISystemConfigurationService configurationService)
         {
             _context = context;
@@ -31,12 +31,11 @@ namespace Data
         {
             try
             {
-                _logger.LogInformation("Start migrating...");
                 await _context.Database.MigrateAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError("An error occurred while migrating the database: " + ex.Message);
+                _logger.LogError($"Migration failed: {ex.Message}");
                 throw;
             }
         }
@@ -130,7 +129,7 @@ namespace Data
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError("An error occurred while initializing the database: " + ex.Message);
+                _logger.LogError($"Data init failed: {ex.Message}");
                 throw;
             }
         }

@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Feature.Settings.Helpers;
 using Feature.Settings.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -7,10 +8,12 @@ namespace Feature.Settings.Middlewares
     public class MaintenanceMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogService<MaintenanceMiddleware> _logService;
 
-        public MaintenanceMiddleware(RequestDelegate next)
+        public MaintenanceMiddleware(RequestDelegate next, ILogService<MaintenanceMiddleware> logService)
         {
             _next = next;
+            _logService = logService;
         }
 
         public async Task InvokeAsync(HttpContext context, ISystemConfigurationService configService)
@@ -35,6 +38,8 @@ namespace Feature.Settings.Middlewares
 
                 if (!whitelistIPs.Contains(clientIP) && clientIP != "::1" && clientIP != "127.0.0.1")
                 {
+                    _logService.LogInfo($"Maintenance: Blocked {clientIP} -> {path}");
+                    
                     context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
                     context.Response.ContentType = "application/json";
                     

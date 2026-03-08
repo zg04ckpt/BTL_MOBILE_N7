@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Base;
 using Core.Interfaces;
 using Core.Models;
@@ -11,8 +12,11 @@ namespace Feature.Overview.Services
 {
     public class AnalyticsService : BaseService, IAnalyticsService
     {
-        public AnalyticsService(IUnitOfWork uow) : base(uow)
+        private readonly ILogService<AnalyticsService> _logService;
+
+        public AnalyticsService(IUnitOfWork uow, ILogService<AnalyticsService> logService) : base(uow)
         {
+            _logService = logService;
         }
 
         public async Task<SystemAnalyticsDto> GetSystemAnalyticsAsync(AnalyticsFilterRequest filter)
@@ -22,18 +26,11 @@ namespace Feature.Overview.Services
 
             var userRepository = _uow.Repository<User>();
 
-            // Get overview metrics
             var overview = await GetOverviewMetricsAsync(userRepository, startDate, endDate, prevStartDate, prevEndDate);
-
-            // Get user trend
             var userTrend = await GetUserTrendAsync(userRepository, startDate, endDate);
-
-            // Get account status distribution
             var statusDistribution = await GetAccountStatusDistributionAsync(userRepository);
-
-            // Get recent users (top 5 for dashboard)
             var recentUsers = await GetRecentUsersListAsync(userRepository, startDate, endDate, 5);
-
+            
             return new SystemAnalyticsDto
             {
                 Overview = overview,
@@ -66,14 +63,14 @@ namespace Feature.Overview.Services
                 orderBy: u => u.CreatedAt,
                 asc: false
             );
-
+            
             return users;
         }
 
         public async Task<byte[]> ExportAnalyticsAsync(AnalyticsFilterRequest filter)
         {
-            var analytics = await GetSystemAnalyticsAsync(filter);
             var (startDate, endDate) = filter.GetDateRange();
+            var analytics = await GetSystemAnalyticsAsync(filter);
 
             var csv = new StringBuilder();
             csv.AppendLine("Quiz Battle - System Analytics Report");

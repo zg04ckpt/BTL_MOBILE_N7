@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Quizzes.Interfaces;
 using Feature.Quizzes.Models;
@@ -11,10 +12,12 @@ namespace API.Controllers
     public class QuestionsController : ControllerBase
     {
         private readonly IQuestionService _questionService;
+        private readonly ILogService<QuestionsController> _logService;
 
-        public QuestionsController(IQuestionService questionService)
+        public QuestionsController(IQuestionService questionService, ILogService<QuestionsController> logService)
         {
             _questionService = questionService;
+            _logService = logService;
         }
 
 
@@ -33,6 +36,7 @@ namespace API.Controllers
             
             if (question == null)
             {
+                _logService.LogError($"[API] Question not found: #{id}");
                 return NotFound(ApiResponse.Failure("Question not found"));
             }
 
@@ -42,6 +46,8 @@ namespace API.Controllers
 
         [HttpPost]
         [Authorize(Policy = "OnlyAdmin")]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
         public async Task<IActionResult> Create([FromForm] CreateQuestionRequest request)
         {
             var result = await _questionService.CreateAsync(request);
@@ -51,6 +57,8 @@ namespace API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Policy = "OnlyAdmin")]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
         public async Task<IActionResult> Update(int id, [FromForm] UpdateQuestionRequest request)
         {
             var result = await _questionService.UpdateAsync(id, request);

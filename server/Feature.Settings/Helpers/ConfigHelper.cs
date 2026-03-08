@@ -23,6 +23,11 @@ namespace Feature.Settings.Helpers
             return await service.GetValueAsync(ConfigurationKey.RequiredAppVersion.ToString(), "1.0.0") ?? "1.0.0";
         }
 
+        public static async Task<int> GetLoginLiveTimeAsync(ISystemConfigurationService service)
+        {
+            return await service.GetValueAsync<int>(ConfigurationKey.LoginLiveTime.ToString(), 10080);
+        }
+
         public static async Task<int> GetQuestionTimeLimitAsync(ISystemConfigurationService service)
         {
             return await service.GetValueAsync<int>(ConfigurationKey.QuestionTimeLimit.ToString(), 30);

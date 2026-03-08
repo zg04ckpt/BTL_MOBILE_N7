@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Overview.Interfaces;
 using Feature.Overview.Models;
@@ -10,10 +11,12 @@ namespace API.Controllers
     public class AnalyticsController : ControllerBase
     {
         private readonly IAnalyticsService _analyticsService;
+        private readonly ILogService<AnalyticsController> _logService;
 
-        public AnalyticsController(IAnalyticsService analyticsService)
+        public AnalyticsController(IAnalyticsService analyticsService, ILogService<AnalyticsController> logService)
         {
             _analyticsService = analyticsService;
+            _logService = logService;
         }
 
         [HttpGet]
@@ -38,8 +41,8 @@ namespace API.Controllers
         //[Authorize(Policy = "OnlyAdmin")]
         public async Task<IActionResult> ExportAnalytics([FromQuery] AnalyticsFilterRequest filter)
         {
-            var csvData = await _analyticsService.ExportAnalyticsAsync(filter);
             var (startDate, endDate) = filter.GetDateRange();
+            var csvData = await _analyticsService.ExportAnalyticsAsync(filter);
             var fileName = $"analytics_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
             
             return File(csvData, "text/csv", fileName);

@@ -10,5 +10,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine AS final
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Ho_Chi_Minh
+RUN ln -sf /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "API.dll"] 

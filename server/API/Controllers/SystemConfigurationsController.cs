@@ -1,3 +1,4 @@
+using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Settings.Interfaces;
 using Feature.Settings.Models;
@@ -11,10 +12,12 @@ namespace API.Controllers
     public class SystemConfigurationsController : ControllerBase
     {
         private readonly ISystemConfigurationService _configurationService;
+        private readonly ILogService<SystemConfigurationsController> _logService;
 
-        public SystemConfigurationsController(ISystemConfigurationService configurationService)
+        public SystemConfigurationsController(ISystemConfigurationService configurationService, ILogService<SystemConfigurationsController> logService)
         {
             _configurationService = configurationService;
+            _logService = logService;
         }
 
         [HttpGet]
@@ -41,6 +44,7 @@ namespace API.Controllers
             
             if (config == null)
             {
+                _logService.LogError($"[API] Config not found: {key}");
                 return NotFound(ApiResponse.Failure("Configuration not found"));
             }
 

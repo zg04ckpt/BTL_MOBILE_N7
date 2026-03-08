@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using CNLib.Services.Logs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -7,9 +7,17 @@ namespace API.Controllers
     [ApiController]
     public class TestsController : ControllerBase
     {
+        private readonly ILogService<TestsController> _logService;
+
+        public TestsController(ILogService<TestsController> logService)
+        {
+            _logService = logService;
+        }
+
         [HttpGet] 
         public IActionResult TestRunning()
         {
+            _logService.LogInfo("Received tesing request");
             return Ok("API running ...");
         }
     }

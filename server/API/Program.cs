@@ -1,4 +1,5 @@
 ﻿using API.Middlewares;
+using CNLib;
 using Core.Exceptions;
 using Core.Models;
 using Core.Utilities;
@@ -14,8 +15,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Storage;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace API
 {
@@ -25,12 +24,16 @@ namespace API
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Validate JWT configuration
+            ValidateJwtConfiguration(builder.Configuration);
+
             builder.Services.AddUsersFeature();
             builder.Services.AddQuizzesFeature();
             builder.Services.AddSettingsFeature();
             builder.Services.AddOverviewFeature();
             builder.Services.AddDBService();
             builder.Services.AddStorageServices();
+            builder.Services.AddCNLib(builder.Configuration);
 
             builder.Services.AddCors(options =>
             {
@@ -63,17 +66,25 @@ namespace API
                 opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(opt =>
             {
+                var jwtIssuer = builder.Configuration["JWT:Issuer"] ?? "QuizBattle.API";
+                var jwtAudience = builder.Configuration["JWT:Audience"] ?? "QuizBattle.Client";
+                var secretKey = EnvUtil.GetEnv(EnvUtil.Keys.QUIZBATTLE_SECRET_KEY);
+
+                if (string.IsNullOrEmpty(secretKey))
+                {
+                    throw new InvalidOperationException("JWT Secret Key is not configured. Please set QUIZBATTLE_SECRET_KEY environment variable.");
+                }
+
                 opt.TokenValidationParameters = new()
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = builder.Configuration["JWT:Issuer"],
-                    ValidAudience = builder.Configuration["JWT:Audience"],
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
                     ClockSkew = TimeSpan.Zero,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(EnvUtil.GetEnv(EnvUtil.Keys.QUIZBATTLE_SECRET_KEY)))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                 };
 
                 opt.Events = new JwtBearerEvents
@@ -121,6 +132,23 @@ namespace API
                     };
                 });
 
+            // Configure multipart body length limit for file uploads
+            var maxFileSizeMB = builder.Configuration.GetValue<int>("FileUpload:MaxFileSizeMB", 10);
+            var maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
+
+            builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = maxFileSizeBytes;
+                options.ValueLengthLimit = maxFileSizeBytes;
+                options.MultipartHeadersLengthLimit = maxFileSizeBytes;
+            });
+
+            // Configure Kestrel server limits
+            builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = maxFileSizeBytes;
+            });
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
@@ -154,6 +182,35 @@ namespace API
             await app.InitializeDatabaseAsync();
 
             app.Run();
+        }
+
+        private static void ValidateJwtConfiguration(IConfiguration configuration)
+        {
+            var secretKey = EnvUtil.GetEnv(EnvUtil.Keys.QUIZBATTLE_SECRET_KEY);
+            var issuer = configuration["JWT:Issuer"];
+            var audience = configuration["JWT:Audience"];
+
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new InvalidOperationException(
+                    "JWT Secret Key not found. Please set QUIZBATTLE_SECRET_KEY environment variable.");
+            }
+
+            if (secretKey.Length < 32)
+            {
+                throw new InvalidOperationException(
+                    "JWT Secret Key must be at least 32 characters long for security.");
+            }
+
+            if (string.IsNullOrEmpty(issuer))
+            {
+                Console.WriteLine("WARNING: JWT:Issuer not configured in appsettings. Using default: QuizBattle.API");
+            }
+
+            if (string.IsNullOrEmpty(audience))
+            {
+                Console.WriteLine("WARNING: JWT:Audience not configured in appsettings. Using default: QuizBattle.Client");
+            }
         }
     }
 }
