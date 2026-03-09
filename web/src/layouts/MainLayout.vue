@@ -11,7 +11,7 @@
     <Sidebar />
 
     <!-- Content -->
-    <div class="content m-3 bg-danger">
+    <div class="content m-3">
         <RouterView />
     </div>
 </template>

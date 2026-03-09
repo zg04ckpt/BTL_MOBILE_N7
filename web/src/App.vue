@@ -9,3 +9,10 @@ import { RouterView } from 'vue-router'
     </main>
   </div>
 </template>
+
+<style scoped>
+:deep(.anticon) {
+    display: inline-flex;
+    align-items: center;
+}
+</style>
