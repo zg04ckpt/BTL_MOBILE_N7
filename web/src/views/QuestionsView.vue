@@ -1,6 +1,6 @@
 <script lang="ts" setup>
     import TableItemActionComponent from '@/components/TableItemActionComponent.vue';
-    import { UploadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+    import { UploadOutlined, DeleteOutlined } from '@ant-design/icons-vue';
     import { computed, h, ref } from 'vue';
 
     const key = ref<string>('');
@@ -15,7 +15,7 @@
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
-            width: 80
+            width: 50
         },
         {
             title: 'Nội dung câu hỏi',
@@ -121,19 +121,9 @@
     <div class="d-flex align-items-center mb-3">
         <h2>Quản lý câu hỏi</h2>
         <div class="flex-fill"></div>
-
-        <a-button class="me-2">
-            <template #icon>
-                <UploadOutlined />
-            </template>
-            Import Excel
-        </a-button>
-
         <a-button type="primary">
-            <template #icon>
-                <PlusOutlined />
-            </template>
-            Thêm câu hỏi
+            <UploadOutlined />
+            Thêm câu hỏi bằng Excel
         </a-button>
         
     </div>
