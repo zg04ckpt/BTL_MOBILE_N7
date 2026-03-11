@@ -17,10 +17,12 @@
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
     "ant-design-vue": "^4.2.6",
+    "apexcharts": "^5.10.3",
     "axios": "^1.13.6",
     "pinia": "^3.0.4",
     "vue": "^3.5.29",
-    "vue-router": "^5.0.3"
+    "vue-router": "^5.0.3",
+    "vue3-apexcharts": "^1.11.1"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.16.1",
