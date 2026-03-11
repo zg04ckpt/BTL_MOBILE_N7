@@ -1,6 +1,6 @@
 using Core.Models;
 
-namespace Feature.Overview.Models
+namespace Feature.Overview.Models.Requests
 {
     public class RecentUsersRequest : PagingRequest
     {

@@ -9,6 +9,7 @@ namespace Feature.Overview
         public static IServiceCollection AddOverviewFeature(this IServiceCollection services)
         {
             services.AddScoped<IAnalyticsService, AnalyticsService>();
+            services.AddScoped<IRankService, RankService>();
             
             return services;
         }

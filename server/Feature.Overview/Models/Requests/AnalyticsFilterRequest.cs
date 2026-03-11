@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Feature.Overview.Models
+namespace Feature.Overview.Models.Requests
 {
     public class AnalyticsFilterRequest
     {
