@@ -40,6 +40,11 @@ const router = createRouter({
           name: 'settings',
           component: () => import('@/views/SettingsView.vue')
         },
+        {
+          path: '/matches',
+          name: 'matches',
+          component: () => import('@/views/MatchesView.vue')
+        }
       ]
     }
   ]
