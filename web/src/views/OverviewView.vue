@@ -1,6 +1,6 @@
 <template>
   <div class="px-4">
-    <section class="d-flex align-items-center px-5 justify-content-between">
+    <section class="d-flex align-items-center justify-content-between">
       <a-typography-title :level="2" class="m-0 fs-1">Báo cáo & thống kê</a-typography-title>
       <a-space size="middle">
         <a-select v-model:value="filterDate" class="w-150px">
