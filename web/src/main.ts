@@ -6,6 +6,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import Antd from 'ant-design-vue'
+import VueApexCharts from 'vue3-apexcharts'
 import 'ant-design-vue/dist/reset.css'
 
 const app = createApp(App)
@@ -13,5 +14,6 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
-app.use(Antd);
-app.mount('#app');
+app.use(Antd)
+app.use(VueApexCharts)
+app.mount('#app')
