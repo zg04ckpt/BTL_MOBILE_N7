@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingTop="8dp">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/iv_opponent_avatar"
+        android:layout_width="29dp"
+        android:layout_height="29dp"
+        android:src="@drawable/opponent_avatar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/CircleImage"/>
+
+    <LinearLayout
+        android:id="@+id/ll_info_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        app:layout_constraintBottom_toBottomOf="@id/iv_opponent_avatar"
+        app:layout_constraintStart_toEndOf="@id/iv_opponent_avatar"
+        app:layout_constraintTop_toTopOf="@id/iv_opponent_avatar"
+        app:layout_constraintEnd_toStartOf="@id/tv_rp_change"
+        >
+
+        <TextView
+            android:id="@+id/tv_opponent_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nguyễn Văn B"
+            android:textColor="@color/color11"
+            android:textStyle="bold"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/tv_match_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2 phút trước"
+            android:textSize="12sp"
+            android:textColor="@color/color1"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_rp_change"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="+25 RP"
+        android:textColor="@color/color7"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+    <View
+        android:id="@+id/view_divider"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginTop="10dp"
+        android:background="@color/color4"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_rp_change"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
