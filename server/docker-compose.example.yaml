@@ -1,0 +1,23 @@
+services:
+  quizbattle:
+    container_name: 'quizbattle'
+    image: quizbattle:latest
+    ports:
+      - "--:8080"
+    volumes:
+      - uploads:/app/uploads
+      - ./hoangcn-16a345ddbd16.json:/app/hoangcn-16a345ddbd16.json
+    environment:
+      - QUIZBATTLE_PGDB_CONNECTION_STRING=
+      - QUIZBATTLE_SECRET_KEY=
+      - QUIZBATTLE_ADMIN_PASS=
+      - TZ=Asia/Ho_Chi_Minh
+    networks:
+      - default_net
+
+volumes:
+  uploads:
+
+networks:
+  default_net:
+    external: true

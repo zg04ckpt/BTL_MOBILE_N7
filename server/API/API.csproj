@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="bin\Debug\net6.0\hoangcn-16a345ddbd16.json" />
+    <Content Include="bin\Debug\net6.0\quizbattle-8014d-firebase-adminsdk-fbsvc-b85a8702bc.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CNLib\CNLib.csproj" />
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Data\Data.csproj" />
+    <ProjectReference Include="..\Feature.Matchs\Feature.Matchs.csproj" />
+    <ProjectReference Include="..\Feature.Users\Feature.Users.csproj" />
+    <ProjectReference Include="..\Feature.Quizzes\Feature.Quizzes.csproj" />
+    <ProjectReference Include="..\Feature.Settings\Feature.Settings.csproj" />
+    <ProjectReference Include="..\Feature.Overview\Feature.Overview.csproj" />
+    <ProjectReference Include="..\Storage\Storage.csproj" />
+  </ItemGroup>
+
+</Project>
