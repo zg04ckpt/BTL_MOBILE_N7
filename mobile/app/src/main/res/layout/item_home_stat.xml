@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:cardCornerRadius="9dp"
+    app:cardElevation="0dp">
+    
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+        
+        <ImageView
+            android:id="@+id/iv_stat_icon"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:src="@drawable/ic_home_rank_point"/>
+
+        <TextView
+            android:id="@+id/tv_stat_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Điểm xếp hạng"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/color11"
+            android:alpha="0.68"/>
+
+        <TextView
+            android:id="@+id/tv_stat_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1560"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:textColor="@color/color11"/>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

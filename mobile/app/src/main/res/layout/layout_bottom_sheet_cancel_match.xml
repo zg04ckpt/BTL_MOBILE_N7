@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="@drawable/bg_bottom_sheet_rounded">
+
+    <TextView
+        android:id="@+id/tv_confirm_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Xác nhận huỷ ghép trận"
+        android:textStyle="bold"
+        android:textColor="@color/color1"
+        android:textSize="20sp"/>
+
+    <TextView
+        android:id="@+id/tv_confirm_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Bạn có chắc chắn muốn hủy ghép trận, sau khi hủy không thể vào lại?"
+        android:textColor="@color/color11"
+        android:textSize="20sp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_confirm_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        app:cornerRadius="6dp"
+        android:backgroundTint="@color/color6"
+        android:text="Xác nhận"
+        android:textColor="@color/color2"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:layout_marginTop="24dp"
+        android:textAllCaps="false"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_stay_wait"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        app:cornerRadius="6dp"
+        android:backgroundTint="@color/color1"
+        android:text="Ở lại và tiếp tục chờ"
+        android:textColor="@color/color2"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:layout_marginTop="12dp"
+        android:textAllCaps="false"/>
+</LinearLayout>
