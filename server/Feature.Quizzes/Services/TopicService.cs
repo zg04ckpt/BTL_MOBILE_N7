@@ -6,6 +6,7 @@ using Core.Utilities;
 using Feature.Quizzes.Entities;
 using Feature.Quizzes.Interfaces;
 using Feature.Quizzes.Models;
+using Feature.Quizzes.Models.Requests;
 using System.Linq.Expressions;
 
 namespace Feature.Quizzes.Services

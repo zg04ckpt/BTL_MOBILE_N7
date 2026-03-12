@@ -7,6 +7,7 @@ using Feature.Quizzes.Entities;
 using Feature.Quizzes.Enums;
 using Feature.Quizzes.Interfaces;
 using Feature.Quizzes.Models;
+using Feature.Quizzes.Models.Requests;
 using System.Linq.Expressions;
 using System.Text.Json;
 
@@ -74,7 +75,7 @@ namespace Feature.Quizzes.Services
 
         protected override async Task<Question> MapFromCreateToEntityAsync(CreateQuestionRequest request)
         {
-            var answers = new Answers
+            var answers = new AnswersDto
             {
                 CorrectAnswers = request.CorrectAnswers,
                 StringAnswers = request.StringAnswers
@@ -102,7 +103,7 @@ namespace Feature.Quizzes.Services
 
         protected override QuestionDetailDto MapFromEntityToDetail(Question entity)
         {
-            var answers = JsonSerializer.Deserialize<Answers>(entity.AnswerJsonData);
+            var answers = JsonSerializer.Deserialize<AnswersDto>(entity.AnswerJsonData);
 
             return new QuestionDetailDto
             {
@@ -140,7 +141,7 @@ namespace Feature.Quizzes.Services
 
         protected override async Task UpdateEntityAsync(Question entity, UpdateQuestionRequest request)
         {
-            var answers = new Answers
+            var answers = new AnswersDto
             {
                 CorrectAnswers = request.CorrectAnswers,
                 StringAnswers = request.StringAnswers

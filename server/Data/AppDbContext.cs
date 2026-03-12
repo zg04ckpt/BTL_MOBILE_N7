@@ -1,7 +1,4 @@
-﻿using Feature.Users;
-using Feature.Quizzes;
-using Feature.Settings;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Data
 {
@@ -17,6 +14,7 @@ namespace Data
             builder.ApplyConfigurationsFromAssembly(typeof(Feature.Users.RefPoint).Assembly);
             builder.ApplyConfigurationsFromAssembly(typeof(Feature.Quizzes.RefPoint).Assembly);
             builder.ApplyConfigurationsFromAssembly(typeof(Feature.Settings.RefPoint).Assembly);
+            builder.ApplyConfigurationsFromAssembly(typeof(Feature.Matchs.RefPoint).Assembly);
         }
     }
 }

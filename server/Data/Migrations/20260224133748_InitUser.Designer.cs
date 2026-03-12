@@ -86,7 +86,7 @@ namespace Data.Migrations
                     b.Property<int>("Rank")
                         .HasColumnType("integer");
 
-                    b.Property<int>("RankScore")
+                    b.Property<int>("RankScoreGained")
                         .HasColumnType("integer");
 
                     b.Property<int>("RoleId")

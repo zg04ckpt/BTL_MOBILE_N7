@@ -1,6 +1,6 @@
 ﻿using Google.Cloud.Firestore;
 
-namespace Feature.Matchs.Models
+namespace Feature.Matchs.Models.Realtimes
 {
     [FirestoreData]
     public class RealtimeRoomLobbyInfoDto

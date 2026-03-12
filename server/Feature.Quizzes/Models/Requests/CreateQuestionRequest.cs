@@ -2,9 +2,9 @@ using Feature.Quizzes.Enums;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
-namespace Feature.Quizzes.Models
+namespace Feature.Quizzes.Models.Requests
 {
-    public class UpdateQuestionRequest
+    public class CreateQuestionRequest
     {
         [Required(ErrorMessage = "Question content is required")]
         [MaxLength(1000, ErrorMessage = "Content must not exceed 1000 characters")]
@@ -21,9 +21,6 @@ namespace Feature.Quizzes.Models
 
         [Required(ErrorMessage = "Question level is required")]
         public QuestionLevel Level { get; set; }
-
-        [Required(ErrorMessage = "Question status is required")]
-        public QuestionStatus Status { get; set; }
 
         [Required(ErrorMessage = "Topic ID is required")]
         [Range(1, int.MaxValue, ErrorMessage = "Topic ID must be greater than 0")]

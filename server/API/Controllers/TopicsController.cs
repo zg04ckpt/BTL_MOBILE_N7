@@ -1,7 +1,7 @@
 using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Quizzes.Interfaces;
-using Feature.Quizzes.Models;
+using Feature.Quizzes.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

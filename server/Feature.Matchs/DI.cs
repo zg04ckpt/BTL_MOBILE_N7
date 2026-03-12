@@ -10,6 +10,7 @@ namespace Feature.Matchs
         {
             services.AddSingleton<IMatchRealtimeService, FirebaseService>();
             services.AddScoped<ILobbyService, LobbyService>();
+            services.AddScoped<IMatchService, MatchService>();
 
             return services;
         }

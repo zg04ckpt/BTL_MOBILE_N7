@@ -1,8 +1,13 @@
 ﻿using CNLib.Services.Logs;
+using Feature.Matchs.Entities;
 using Feature.Matchs.Interfaces;
 using Feature.Matchs.Models;
+using Feature.Matchs.Models.Realtimes;
+using Feature.Quizzes.Entities;
+using Feature.Quizzes.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
+using System.Text.Json;
 
 namespace Feature.Matchs.Services
 {
@@ -12,6 +17,7 @@ namespace Feature.Matchs.Services
         private readonly ILogService<FirebaseService> _logService;
 
         public event EventHandler<RealtimeRoomLobbyInfoDto>? OnCloseRoom;
+        public event EventHandler<(string trackingId, List<MatchPlayerAnswerDto> answers)>? OnPlayerPickAnswer;
 
         public FirebaseService(ILogService<FirebaseService> logService)
         {
@@ -81,14 +87,14 @@ namespace Feature.Matchs.Services
                 await docRef.UpdateAsync(nameof(room.Players), room.Players);
                 await docRef.UpdateAsync(nameof(room.StatusLogs), room.StatusLogs);
 
-                // If reach the limit, close room after 3s
+                // If reach the limit, close room after 5s
                 if (room.Players.Count == room.MaxPlayers)
                 {
                     _ = Task.Run(async () =>
                     {
-                        room.StatusLogs.Add($"Đã đủ người, trận đấu sẽ bắt đầu sau 10s");
+                        room.StatusLogs.Add($"Đã đủ người, trận đấu sẽ bắt đầu sau 5s");
                         await docRef.UpdateAsync(nameof(room.StatusLogs), room.StatusLogs);
-                        await Task.Delay(10000);
+                        await Task.Delay(5000);
                         await CloseLobbyRoomToStartMatchAsync(docRef, room);
                     });
                 }
@@ -136,6 +142,145 @@ namespace Feature.Matchs.Services
             }
         }
 
+        public async Task<bool> AddNewMatchRoomAsync(string trackingId, List<PlayerInLobbyInfoDto> players, Match match)
+        {
+            try
+            {
+                var room = new MatchRoomDto
+                {
+                    RoomId = match.Id,
+                    StatusLogs = new List<string>
+                    {
+                        "Bắt đầu thi đấu sau 3s"
+                    },
+                    Answers = new List<MatchPlayerAnswerDto>(),
+                    Players = players.Select(e => new MatchPlayerInfoDto
+                    {
+                        UserId = e.UserId,
+                        AvatarUrl = e.AvatarUrl,
+                        DisplayName = e.DisplayName,
+                        Level = e.Level,
+                        Progress = 0,
+                        Score = 0
+                    }).ToList()
+                };
+
+                // Random rank
+                for (int i = 0; i < room.Players.Count; i++)
+                {
+                    room.Players[i].Rank = i + 1;
+                }
+
+                var docRef = _db.Collection("match-rooms").Document(trackingId);
+                await docRef.CreateAsync(room);
+
+                // Set player answer event listener
+                docRef.Listen(async snapshot =>
+                {
+                    if (!snapshot.Exists)
+                    {
+                        return;
+                    }
+                    var data = snapshot.ConvertTo<MatchRoomDto>();
+                    if (data.Answers.Count > 0)
+                    {
+                        OnPlayerPickAnswer?.Invoke(this, (trackingId, data.Answers));
+                        data.Answers.Clear();
+                        await docRef.UpdateAsync("Answers", data.Answers);
+                    }
+                });
+
+                // Debug
+                _logService.LogSuccess($"New match {trackingId} started with {players.Count} players");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"Failed to start match {trackingId}: {ex.Message}");
+                return false;
+            }
+            
+        }
+
+        public async Task<bool> UpdateLeaderboardAsync(string trackingId, List<UserMappingDto> updatedUsers)
+        {
+            try
+            {
+                var docRef = _db.Collection("match-rooms").Document(trackingId);
+                var snapshot = await docRef.GetSnapshotAsync();
+                if (!snapshot.Exists)
+                {
+                    _logService.LogError($"Failed to update leaderboard: match room {trackingId} not found");
+                    return false;
+                }
+
+                var room = snapshot.ConvertTo<MatchRoomDto>();
+
+                // Snapshot old ranks before any update
+                var oldRanks = room.Players.ToDictionary(p => p.UserId, p => p.Rank);
+
+                foreach (var updated in updatedUsers)
+                {
+                    var player = room.Players.FirstOrDefault(p => p.UserId == updated.UserId);
+                    if (player != null)
+                    {
+                        player.Score = updated.Score;
+                        player.Progress = updated.Progress;
+                    }
+                }
+
+                // Recalculate ranks sorted by score descending
+                var ranked = room.Players.OrderByDescending(p => p.Score).ToList();
+                for (int i = 0; i < ranked.Count; i++)
+                {
+                    ranked[i].Rank = i + 1;
+                }
+
+                // Append status logs for players whose rank changed
+                foreach (var player in ranked)
+                {
+                    if (!oldRanks.TryGetValue(player.UserId, out var oldRank) || oldRank == player.Rank)
+                        continue;
+
+                    string log = player.Rank == 1
+                        ? $"{player.DisplayName} đã vươn lên dẫn đầu! ({player.Score} điểm)"
+                        : $"{player.DisplayName} thay đổi hạng: #{oldRank} → #{player.Rank} ({player.Score} điểm)";
+
+                    room.StatusLogs.Add(log);
+                }
+
+                await docRef.UpdateAsync(new Dictionary<string, object>
+                {
+                    { nameof(room.Players), room.Players },
+                    { nameof(room.StatusLogs), room.StatusLogs }
+                });
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"Failed to update leaderboard for match {trackingId}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> CloseMatchRoomAsync(string trackingId)
+        {
+            try
+            {
+                var docRef = _db.Collection("match-rooms").Document(trackingId);
+                await docRef.DeleteAsync();
+                _logService.LogSuccess($"Match room {trackingId} closed and removed from Firebase");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"Failed to close match room {trackingId}: {ex.Message}");
+                return false;
+            }
+        }
+
         private async Task CloseLobbyRoomToStartMatchAsync(DocumentReference docRef, RealtimeRoomLobbyInfoDto room)
         {
             try
@@ -148,5 +293,6 @@ namespace Feature.Matchs.Services
                 _logService.LogError($"Failed to close room {room.RoomLobbyId}: {ex.Message}");
             }
         }
+
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Feature.Matchs.Enums;
-using Feature.Matchs.Models;
+using Feature.Matchs.Models.Realtimes;
 using Feature.Matchs.Models.Requests;
 
 namespace Feature.Matchs.Interfaces

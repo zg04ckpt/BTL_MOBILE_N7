@@ -3,7 +3,7 @@ using Feature.Matchs.Enums;
 using Feature.Quizzes.Entities;
 using Google.Cloud.Firestore;
 
-namespace Feature.Matchs.Models
+namespace Feature.Matchs.Models.Realtimes
 {
     [FirestoreData]
     public class LobbyRoomDto
@@ -13,7 +13,9 @@ namespace Feature.Matchs.Models
         [FirestoreProperty]
         public LobbyRoomStatus Status { get; set; }
         [FirestoreProperty]
-        public int TopicId { get; set; }
+        public MatchContentType ContentType { get; set; }
+        [FirestoreProperty]
+        public int? TopicId { get; set; }
         [FirestoreProperty]
         public int MaxPlayers { get; set; }
     }

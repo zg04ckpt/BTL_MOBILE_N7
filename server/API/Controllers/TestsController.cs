@@ -2,6 +2,7 @@
 using Feature.Matchs.Enums;
 using Feature.Matchs.Interfaces;
 using Feature.Matchs.Models;
+using Feature.Matchs.Models.Realtimes;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 

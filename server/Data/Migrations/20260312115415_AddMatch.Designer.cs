@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260307142540_AddQuestion")]
-    partial class AddQuestion
+    [Migration("20260312115415_AddMatch")]
+    partial class AddMatch
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -23,6 +23,96 @@ namespace Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Feature.Matchs.Entities.Match", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BattleType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MaxSecondPerQuestion")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NumberOfPlayers")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ScorePerCorrectAnswer")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TopicId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TopicId");
+
+                    b.ToTable("Matchs", (string)null);
+                });
+
+            modelBuilder.Entity("Feature.Matchs.Entities.QuestionInMatch", b =>
+                {
+                    b.Property<int>("MatchId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("CorrectRate")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("MatchId", "QuestionId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("QuestionInMatchs", (string)null);
+                });
+
+            modelBuilder.Entity("Feature.Matchs.Entities.UserMatchResultHistory", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MatchId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Correct")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Duration")
+                        .HasColumnType("numeric(10,3)");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "MatchId");
+
+                    b.HasIndex("MatchId");
+
+                    b.ToTable("UserMatchResultHistories", (string)null);
+                });
 
             modelBuilder.Entity("Feature.Quizzes.Entities.Question", b =>
                 {
@@ -115,6 +205,39 @@ namespace Data.Migrations
                     b.ToTable("Topics", (string)null);
                 });
 
+            modelBuilder.Entity("Feature.Settings.Entities.SystemConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SystemConfigurations", (string)null);
+                });
+
             modelBuilder.Entity("Feature.Users.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -194,6 +317,55 @@ namespace Data.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("Feature.Matchs.Entities.Match", b =>
+                {
+                    b.HasOne("Feature.Quizzes.Entities.Topic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("Feature.Matchs.Entities.QuestionInMatch", b =>
+                {
+                    b.HasOne("Feature.Matchs.Entities.Match", "Match")
+                        .WithMany("Questions")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Feature.Quizzes.Entities.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("Feature.Matchs.Entities.UserMatchResultHistory", b =>
+                {
+                    b.HasOne("Feature.Matchs.Entities.Match", "Match")
+                        .WithMany("Users")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Feature.Users.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Feature.Quizzes.Entities.Question", b =>
                 {
                     b.HasOne("Feature.Quizzes.Entities.Topic", "Topic")
@@ -214,6 +386,13 @@ namespace Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Feature.Matchs.Entities.Match", b =>
+                {
+                    b.Navigation("Questions");
+
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Feature.Quizzes.Entities.Topic", b =>

@@ -7,12 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CNLib\CNLib.csproj" />
+    <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Feature.Quizzes\Feature.Quizzes.csproj" />
     <ProjectReference Include="..\Feature.Users\Feature.Users.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Entities\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
 using Core.Models;
 
-namespace Feature.Quizzes.Models
+namespace Feature.Quizzes.Models.Requests
 {
     public class SearchTopicRequest : PagingRequest
     {
