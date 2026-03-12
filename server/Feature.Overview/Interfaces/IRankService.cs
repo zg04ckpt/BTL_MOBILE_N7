@@ -1,4 +1,5 @@
-﻿using Feature.Overview.Models;
+﻿using Feature.Overview.Enums;
+using Feature.Overview.Models;
 
 namespace Feature.Overview.Interfaces
 {

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Feature.Overview.Enums;
+using System.Text.Json.Serialization;
 
 namespace Feature.Overview.Models.Requests
 {

@@ -1,6 +1,7 @@
 ﻿using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
+using Feature.Overview.Enums;
 using Feature.Overview.Interfaces;
 using Feature.Overview.Models;
 using Feature.Users.Entities;
@@ -27,7 +28,7 @@ namespace Feature.Overview.Services
                 .Select((u, index) => new UserRankListItemDto
                 {
                     UserId = u.Id,
-                    FullName = u.Name,
+                    DisplayName = u.Name,
                     AvatarUrl = u.AvatarUrl,
                     RankScore = u.RankScore,
                     Rank = index + 1
@@ -51,7 +52,7 @@ namespace Feature.Overview.Services
             return new UserRankDto
             {
                 UserId = user.Id,
-                FullName = user.Name,
+                DisplayName = user.Name,
                 AvatarUrl = user.AvatarUrl,
                 RankScore = user.RankScore,
                 Rank = higherCount + 1,

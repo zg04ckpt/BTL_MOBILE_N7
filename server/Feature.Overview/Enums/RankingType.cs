@@ -1,4 +1,4 @@
-﻿namespace Feature.Overview.Models
+﻿namespace Feature.Overview.Enums
 {
     public enum RankingType
     {

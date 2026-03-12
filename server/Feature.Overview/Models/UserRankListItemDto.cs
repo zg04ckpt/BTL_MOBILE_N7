@@ -4,7 +4,7 @@
     {
         public int UserId { get; set; }
         public string AvatarUrl { get; set; }
-        public string FullName { get; set; }
+        public string DisplayName { get; set; }
         public int RankScore { get; set; }
         public int Rank { get; set; }
     }

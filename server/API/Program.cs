@@ -7,6 +7,8 @@ using Data;
 using Feature.Overview;
 using Feature.Quizzes;
 using Feature.Settings;
+using Feature.Matchs;
+using Feature.Settings.Middlewares;
 using Feature.Users;
 using Feature.Users.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,13 +26,13 @@ namespace API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Validate JWT configuration
             ValidateJwtConfiguration(builder.Configuration);
 
             builder.Services.AddUsersFeature();
             builder.Services.AddQuizzesFeature();
             builder.Services.AddSettingsFeature();
             builder.Services.AddOverviewFeature();
+            builder.Services.AddMatchFeature();
             builder.Services.AddDBService();
             builder.Services.AddStorageServices();
             builder.Services.AddCNLib(builder.Configuration);
@@ -156,14 +158,14 @@ namespace API
             app.UseMiddleware<GlobalExceptionMiddleware>();
             app.UseMiddleware<ExtractTokenMiddleware>();
 
-            // Optional: Enable maintenance mode and version check
-            app.UseMiddleware<Feature.Settings.Middlewares.MaintenanceMiddleware>();
-            app.UseMiddleware<Feature.Settings.Middlewares.AppVersionMiddleware>();
+            app.UseMiddleware<MaintenanceMiddleware>();
+            app.UseMiddleware<AppVersionMiddleware>();
 
+            var path = Path.Combine(AppContext.BaseDirectory, "uploads");
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(
-                    Path.Combine(AppContext.BaseDirectory, "uploads")),
+                FileProvider = new PhysicalFileProvider(path),
                 RequestPath = "/uploads"
             });
 

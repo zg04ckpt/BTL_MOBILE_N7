@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Overview", "Feature
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CNLib", "CNLib\CNLib.csproj", "{D438A658-9841-8D18-7CB5-141BBF881951}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Matchs", "Feature.Matchs\Feature.Matchs.csproj", "{E4A6CB9B-C367-4074-8295-5950609D1BDA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{D438A658-9841-8D18-7CB5-141BBF881951}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D438A658-9841-8D18-7CB5-141BBF881951}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D438A658-9841-8D18-7CB5-141BBF881951}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4A6CB9B-C367-4074-8295-5950609D1BDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4A6CB9B-C367-4074-8295-5950609D1BDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4A6CB9B-C367-4074-8295-5950609D1BDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4A6CB9B-C367-4074-8295-5950609D1BDA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

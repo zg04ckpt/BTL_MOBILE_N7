@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -45,6 +46,11 @@ namespace Core.Utilities
             public const string UserLoggedOut = "Đã đăng xuất";
             public static Func<string, string> UserIsLocked = reason => "Bị khóa tài khoản: " + reason;
             public const string UserIsUnlocked = "Đã mở khóa tài khoản";
+        }
+
+        public static int GetUserIdFromClaim(ClaimsPrincipal claims)
+        {
+            return int.Parse(claims.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         }
 
         /// <summary>
