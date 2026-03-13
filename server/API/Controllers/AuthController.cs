@@ -3,8 +3,8 @@ using Core.Models;
 using Feature.Settings.Helpers;
 using Feature.Settings.Interfaces;
 using Feature.Users.Interfaces;
-using Feature.Users.Models;
 using Microsoft.AspNetCore.Mvc;
+using Models.Users.Requests;
 
 namespace API.Controllers
 {

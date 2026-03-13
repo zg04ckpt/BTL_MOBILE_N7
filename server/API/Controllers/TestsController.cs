@@ -1,10 +1,8 @@
 ﻿using CNLib.Services.Logs;
-using Feature.Matchs.Enums;
 using Feature.Matchs.Interfaces;
-using Feature.Matchs.Models;
-using Feature.Matchs.Models.Realtimes;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
+using Models.Matchs.Enums;
+using Models.Matchs.Realtimes;
 
 namespace API.Controllers
 {

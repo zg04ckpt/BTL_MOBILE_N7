@@ -1,6 +1,6 @@
 using Core.Models;
-using Feature.Overview.Models;
-using Feature.Overview.Models.Requests;
+using Models.Overviews.DTOs;
+using Models.Overviews.Requests;
 
 namespace Feature.Overview.Interfaces
 {

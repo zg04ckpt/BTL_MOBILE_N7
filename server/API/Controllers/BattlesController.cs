@@ -1,10 +1,9 @@
 ﻿using Core.Models;
 using Core.Utilities;
 using Feature.Matchs.Interfaces;
-using Feature.Matchs.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Models.Matchs.Requests;
 
 namespace API.Controllers
 {

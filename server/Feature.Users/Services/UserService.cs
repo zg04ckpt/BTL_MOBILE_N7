@@ -5,9 +5,10 @@ using Core.Interfaces;
 using Core.Models;
 using Core.Utilities;
 using Feature.Users.Entities;
-using Feature.Users.Enums;
 using Feature.Users.Interfaces;
-using Feature.Users.Models;
+using Models.Users.DTOs;
+using Models.Users.Enums;
+using Models.Users.Requests;
 using System.Linq.Expressions;
 
 namespace Feature.Users.Services
@@ -37,6 +38,8 @@ namespace Feature.Users.Services
                 _logService.LogError($"Profile not found: #{userId}");
                 throw new NotFoundException("Người dùng không tồn tại");
             }
+
+            //var userInMatchHistory = await _uow.Repository<>
             
             return new UserProfileDto
             {

@@ -1,7 +1,7 @@
 using Core.Interfaces;
-using Feature.Quizzes.Entities;
-using Feature.Quizzes.Models;
-using Feature.Quizzes.Models.Requests;
+using Models.Quizzes.DTOs;
+using Models.Quizzes.Entities;
+using Models.Quizzes.Requests;
 
 namespace Feature.Quizzes.Interfaces
 {

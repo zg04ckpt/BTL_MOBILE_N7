@@ -1,10 +1,10 @@
-﻿using Core.Interfaces;
+﻿using CNLib.Services.Logs;
+using Core.Interfaces;
 using Core.Utilities;
-using Feature.Users.Entities;
-using Feature.Users.Enums;
 using Feature.Settings.Interfaces;
+using Feature.Users.Entities;
 using Microsoft.EntityFrameworkCore;
-using CNLib.Services.Logs;
+using Models.Users.Enums;
 
 namespace Data
 {

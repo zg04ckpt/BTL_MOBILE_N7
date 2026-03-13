@@ -3,10 +3,10 @@ using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Utilities;
-using Feature.Quizzes.Entities;
 using Feature.Quizzes.Interfaces;
-using Feature.Quizzes.Models;
-using Feature.Quizzes.Models.Requests;
+using Models.Quizzes.DTOs;
+using Models.Quizzes.Entities;
+using Models.Quizzes.Requests;
 using System.Linq.Expressions;
 
 namespace Feature.Quizzes.Services

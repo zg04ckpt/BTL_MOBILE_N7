@@ -4,14 +4,14 @@ using Core.Exceptions;
 using Core.Interfaces;
 using Core.Utilities;
 using Feature.Users.Entities;
-using Feature.Users.Enums;
 using Feature.Users.Interfaces;
-using Feature.Users.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Models.Users.DTOs;
+using Models.Users.Enums;
+using Models.Users.Requests;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace Feature.Users.Services

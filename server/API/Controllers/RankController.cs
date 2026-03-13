@@ -1,8 +1,8 @@
 using Core.Models;
-using Feature.Overview.Enums;
 using Feature.Overview.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Models.Overviews.Enums;
 using System.Security.Claims;
 
 namespace API.Controllers

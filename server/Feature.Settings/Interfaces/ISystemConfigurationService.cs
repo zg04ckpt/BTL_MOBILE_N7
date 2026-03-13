@@ -1,4 +1,5 @@
-using Feature.Settings.Models;
+using Models.Settings.DTOs;
+using Models.Settings.Requests;
 
 namespace Feature.Settings.Interfaces
 {

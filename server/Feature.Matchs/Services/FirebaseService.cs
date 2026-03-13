@@ -1,13 +1,10 @@
 ﻿using CNLib.Services.Logs;
-using Feature.Matchs.Entities;
 using Feature.Matchs.Interfaces;
-using Feature.Matchs.Models;
-using Feature.Matchs.Models.Realtimes;
-using Feature.Quizzes.Entities;
-using Feature.Quizzes.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
-using System.Text.Json;
+using Models.Matchs.DTOs;
+using Models.Matchs.Entities;
+using Models.Matchs.Realtimes;
 
 namespace Feature.Matchs.Services
 {

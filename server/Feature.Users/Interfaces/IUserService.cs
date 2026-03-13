@@ -1,7 +1,8 @@
 ﻿using Core.Interfaces;
 using Core.Models;
 using Feature.Users.Entities;
-using Feature.Users.Models;
+using Models.Users.DTOs;
+using Models.Users.Requests;
 
 namespace Feature.Users.Interfaces
 {

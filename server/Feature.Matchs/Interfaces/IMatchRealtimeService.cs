@@ -1,7 +1,6 @@
-﻿using Feature.Matchs.Entities;
-using Feature.Matchs.Models;
-using Feature.Matchs.Models.Realtimes;
-using Feature.Quizzes.Entities;
+﻿using Models.Matchs.DTOs;
+using Models.Matchs.Entities;
+using Models.Matchs.Realtimes;
 
 namespace Feature.Matchs.Interfaces
 {

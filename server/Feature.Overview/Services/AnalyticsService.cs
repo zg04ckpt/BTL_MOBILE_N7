@@ -2,12 +2,12 @@ using CNLib.Services.Logs;
 using Core.Base;
 using Core.Interfaces;
 using Core.Models;
-using Feature.Users.Entities;
-using Feature.Users.Enums;
 using Feature.Overview.Interfaces;
-using Feature.Overview.Models;
+using Feature.Users.Entities;
+using Models.Overviews.DTOs;
+using Models.Overviews.Requests;
+using Models.Users.Enums;
 using System.Text;
-using Feature.Overview.Models.Requests;
 
 namespace Feature.Overview.Services
 {

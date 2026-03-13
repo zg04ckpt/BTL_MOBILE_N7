@@ -1,9 +1,9 @@
 ﻿using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Users.Interfaces;
-using Feature.Users.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Models.Users.Requests;
 using System.Security.Claims;
 
 namespace API.Controllers

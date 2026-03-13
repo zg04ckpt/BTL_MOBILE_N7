@@ -1,5 +1,5 @@
-using Feature.Settings.Enums;
 using Feature.Settings.Interfaces;
+using Models.Settings.Enums;
 
 namespace Feature.Settings.Helpers
 {

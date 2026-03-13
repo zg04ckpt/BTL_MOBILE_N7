@@ -2,21 +2,19 @@
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
-using Feature.Matchs.Entities;
-using Feature.Matchs.Enums;
 using Feature.Matchs.Interfaces;
-using Feature.Matchs.Models;
-using Feature.Matchs.Models.Realtimes;
-using Feature.Matchs.Models.Requests;
-using Feature.Matchs.Utils;
-using Feature.Quizzes.Entities;
-using Feature.Quizzes.Enums;
-using Feature.Quizzes.Models;
 using LinqKit;
 using Microsoft.Extensions.DependencyInjection;
+using Models.Matchs.DTOs;
+using Models.Matchs.Entities;
+using Models.Matchs.Enums;
+using Models.Matchs.Realtimes;
+using Models.Matchs.Requests;
+using Models.Quizzes.DTOs;
+using Models.Quizzes.Entities;
+using Models.Quizzes.Enums;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Feature.Matchs.Services
 {

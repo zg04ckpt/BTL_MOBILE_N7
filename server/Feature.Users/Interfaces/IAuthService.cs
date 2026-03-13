@@ -1,4 +1,5 @@
-﻿using Feature.Users.Models;
+﻿using Models.Users.DTOs;
+using Models.Users.Requests;
 
 namespace Feature.Users.Interfaces
 {

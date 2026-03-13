@@ -1,6 +1,4 @@
-﻿using Feature.Quizzes.Entities;
-
-namespace Feature.Matchs.Utils
+﻿namespace Feature.Matchs.Utils
 {
     public class TopicUtil
     {

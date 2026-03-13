@@ -1,8 +1,8 @@
 using CNLib.Services.Logs;
 using Core.Models;
 using Feature.Overview.Interfaces;
-using Feature.Overview.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Models.Overviews.Requests;
 
 namespace API.Controllers
 {

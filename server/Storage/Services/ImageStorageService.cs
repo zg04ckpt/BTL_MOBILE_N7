@@ -55,7 +55,7 @@ namespace Storage.Services
             if (errors.Any())
             {
                 _logService.LogError($"Files not found: {string.Join(", ", errors)}");
-                throw new NotFoundException($"Files not found: {string.Join(", ", errors)}");
+                //throw new NotFoundException($"Files not found: {string.Join(", ", errors)}");
             }
 
             return Task.CompletedTask;

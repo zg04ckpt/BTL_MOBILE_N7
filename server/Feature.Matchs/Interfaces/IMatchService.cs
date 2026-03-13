@@ -1,7 +1,7 @@
 ﻿using Core.Models;
-using Feature.Matchs.Models;
-using Feature.Matchs.Models.Realtimes;
-using Feature.Matchs.Models.Requests;
+using Models.Matchs.DTOs;
+using Models.Matchs.Realtimes;
+using Models.Matchs.Requests;
 
 namespace Feature.Matchs.Interfaces
 {

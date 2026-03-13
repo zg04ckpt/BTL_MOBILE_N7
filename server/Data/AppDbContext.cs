@@ -11,10 +11,7 @@ namespace Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            builder.ApplyConfigurationsFromAssembly(typeof(Feature.Users.RefPoint).Assembly);
-            builder.ApplyConfigurationsFromAssembly(typeof(Feature.Quizzes.RefPoint).Assembly);
-            builder.ApplyConfigurationsFromAssembly(typeof(Feature.Settings.RefPoint).Assembly);
-            builder.ApplyConfigurationsFromAssembly(typeof(Feature.Matchs.RefPoint).Assembly);
+            builder.ApplyConfigurationsFromAssembly(typeof(Models.RefPoint).Assembly);
         }
     }
 }

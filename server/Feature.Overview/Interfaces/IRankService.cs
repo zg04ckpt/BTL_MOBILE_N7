@@ -1,5 +1,5 @@
-﻿using Feature.Overview.Enums;
-using Feature.Overview.Models;
+﻿using Models.Overviews.DTOs;
+using Models.Overviews.Enums;
 
 namespace Feature.Overview.Interfaces
 {

@@ -1,10 +1,10 @@
 ﻿using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
-using Feature.Overview.Enums;
 using Feature.Overview.Interfaces;
-using Feature.Overview.Models;
 using Feature.Users.Entities;
+using Models.Overviews.DTOs;
+using Models.Overviews.Enums;
 
 namespace Feature.Overview.Services
 {
