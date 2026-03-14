@@ -107,12 +107,12 @@ namespace API
                         {
                             if (context.AuthenticateFailure is SecurityTokenExpiredException)
                             {
-                                throw new UnauthorizedException("Token hết hạn");
+                                throw new UnauthorizedException("Token has expired");
                             }
-                            throw new UnauthorizedException("Token không hợp lệ");
+                            throw new UnauthorizedException("Invalid token");
                         }
                         
-                        throw new UnauthorizedException("Yêu cầu xác thực");
+                        throw new UnauthorizedException("Authentication required");
                     }
                 };
             });
@@ -129,7 +129,7 @@ namespace API
                                 kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                             );
 
-                        var response = ApiResponse.Failure("Dữ liệu không hợp lệ", errors);
+                        var response = ApiResponse.Failure("Invalid input data", errors);
                         return new BadRequestObjectResult(response);
                     };
                 });

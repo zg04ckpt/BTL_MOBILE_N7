@@ -1,79 +1,187 @@
-using CNLib.Services.Logs;
 using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
+using Core.Models;
 using Core.Utilities;
 using Feature.Quizzes.Interfaces;
+using LinqKit;
 using Models.Quizzes.DTOs;
 using Models.Quizzes.Entities;
 using Models.Quizzes.Enums;
 using Models.Quizzes.Requests;
 using System.Linq.Expressions;
 using System.Text.Json;
+using static Grpc.Core.Metadata;
 
 namespace Feature.Quizzes.Services
 {
     public class QuestionService
-        : CrudWithPagingService<Question, CreateQuestionRequest, UpdateQuestionRequest, QuestionListItemDto, QuestionDetailDto, SearchQuestionRequest>, IQuestionService
+        : BaseService, IQuestionService, ICrudWithPagingService<Question, CreateQuestionRequest, UpdateQuestionRequest, QuestionListItemDto, QuestionDetailDto, SearchQuestionRequest>
     {
         private readonly IStorageService _storageService;
-        private readonly ILogService<QuestionService> _logService;
 
-        public QuestionService(IUnitOfWork uow, IStorageService storageService, ILogService<QuestionService> logService) : base(uow)
+        public QuestionService(IUnitOfWork uow, IStorageService storageService) : base(uow)
         {
             _storageService = storageService;
-            _logService = logService;
         }
 
-        protected override async Task ConfirmValidCreateDataAsync(CreateQuestionRequest request)
+        public async Task<IEnumerable<QuestionListItemDto>> GetAllAsync()
+        {
+            var entities = await _uow.Repository<Question>().GetAllAsync(
+                predicate: q => true,
+                selector: entity => new QuestionListItemDto
+                {
+                    Id = entity.Id,
+                    Slug = entity.Slug,
+                    StringContent = entity.StringContent,
+                    Type = entity.Type,
+                    Level = entity.Level,
+                    Status = entity.Status,
+                    TopicName = entity.Topic.Name,
+                    CreatedAt = entity.CreatedAt
+                });
+
+            return entities;
+        }
+
+        public async Task<QuestionDetailDto?> GetByIdAsync(int id)
+        {
+            var question = await _uow.Repository<Question>().GetFirstAsync(
+                predicate: q => q.Id == id,
+                selector: entity => new
+                {
+                    Data = new QuestionDetailDto
+                    {
+                        Id = entity.Id,
+                        Slug = entity.Slug,
+                        StringContent = entity.StringContent,
+                        ImageUrl = entity.ImageUrl,
+                        AudioUrl = entity.AudioUrl,
+                        VideoUrl = entity.VideoUrl,
+                        Type = entity.Type,
+                        Level = entity.Level,
+                        Status = entity.Status,
+                        TopicId = entity.TopicId,
+                        TopicName = entity.Topic.Name,
+                        CreatedAt = entity.CreatedAt,
+                    },
+                    entity.AnswerJsonData,
+                })
+                ?? throw new NotFoundException("Question not found");
+
+            var answers = JsonSerializer.Deserialize<AnswersDto>(question.AnswerJsonData)!;
+            question.Data.CorrectAnswers = answers.CorrectAnswers;
+            question.Data.StringAnswers = answers.StringAnswers;
+
+            return question.Data;
+        }
+
+        public async Task<Paginated<QuestionListItemDto>> GetPagingAsync(SearchQuestionRequest request)
+        {
+            var filter = PredicateBuilder.New<Question>();
+            if (!string.IsNullOrEmpty(request.StringContent))
+            {
+                filter = filter.And(e => e.StringContent.Contains(request.StringContent));
+            }
+            if (request.TopicId != null)
+            {
+                filter = filter.And(e => e.TopicId == request.TopicId);
+            }
+            if (request.Type != null)
+            {
+                filter = filter.And(e => e.Type == request.Type);
+            }
+            if (request.Level != null)
+            {
+                filter = filter.And(e => e.Level == request.Level);
+            }
+            if (request.Status != null)
+            {
+                filter = filter.And(e => e.Status == request.Status);
+            }
+
+            var entities = await _uow.Repository<Question>().GetPagingAsync(
+                predicate: filter,
+                pageIndex: request.PageIndex,
+                pageSize: request.PageSize,
+                orderBy: request.OrderBy ?? nameof(Question.CreatedAt),
+                asc: request.IsAsc,
+                selector: entity => new QuestionListItemDto
+                {
+                    Id = entity.Id,
+                    Slug = entity.Slug,
+                    StringContent = entity.StringContent,
+                    Type = entity.Type,
+                    Level = entity.Level,
+                    Status = entity.Status,
+                    TopicName = entity.Topic.Name,
+                    CreatedAt = entity.CreatedAt
+                });
+
+            return entities;
+        }
+
+        public async Task<ChangedResponse> CreateAsync(CreateQuestionRequest request)
+        {
+            await ConfirmValidCreateDataAsync(request);
+
+            var entity = await MapFromCreateRequestAsync(request);
+            await _uow.Repository<Question>().AddAsync(entity);
+            await _uow.SaveChangesAsync();
+
+            return ChangedResponse.FromEntity(entity);
+        }
+
+        public async Task<ChangedResponse> UpdateAsync(int id, UpdateQuestionRequest request)
+        {
+            var entity = await GetEntityAsync<Question>(id);
+            await ConfirmValidUpdateDataAsync(request);
+
+            await UpdateEntityAsync(entity, request);
+            await _uow.Repository<Question>().UpdateAsync(entity);
+            await _uow.SaveChangesAsync();
+
+            return ChangedResponse.FromEntity(entity);
+        }
+
+        public async Task<ChangedResponse> DeleteAsync(int id)
+        {
+            var entity = await GetEntityAsync<Question>(id);
+            await _uow.Repository<Question>().DeleteAsync(entity);
+            await _uow.SaveChangesAsync();
+
+            return ChangedResponse.FromEntity(entity);
+        }
+
+        private async Task ConfirmValidCreateDataAsync(CreateQuestionRequest request)
+        {            
+            if (!await _uow.Repository<Topic>().ExistsAsync(t => t.Id == request.TopicId))
+            {
+                throw new BadRequestException("Topic does not exist");
+            }
+
+            var slug = StringUtil.ToSlug(request.StringContent);
+            if (await _uow.Repository<Question>().ExistsAsync(q => q.Slug == slug))
+            {
+                throw new BadRequestException("Question content is duplicated");
+            }
+
+            ValidateAnswers(request.Type, request.CorrectAnswers, request.StringAnswers);
+        }
+
+        private async Task ConfirmValidUpdateDataAsync(UpdateQuestionRequest request)
         {
             var topicRepository = _uow.Repository<Topic>();
             
             if (!await topicRepository.ExistsAsync(t => t.Id == request.TopicId))
             {
-                _logService.LogError($"Create question failed: Topic #{request.TopicId} not found");
                 throw new BadRequestException("Topic does not exist");
             }
 
             ValidateAnswers(request.Type, request.CorrectAnswers, request.StringAnswers);
         }
 
-        protected override async Task ConfirmValidUpdateDataAsync(Question entity, UpdateQuestionRequest request)
-        {
-            var topicRepository = _uow.Repository<Topic>();
-            
-            if (!await topicRepository.ExistsAsync(t => t.Id == request.TopicId))
-            {
-                _logService.LogError($"Update question failed: Topic #{request.TopicId} not found");
-                throw new BadRequestException("Topic does not exist");
-            }
-
-            ValidateAnswers(request.Type, request.CorrectAnswers, request.StringAnswers);
-        }
-
-        protected override Expression<Func<Question, object>> GetOrderBy(string? orderBy)
-        {
-            return orderBy?.ToLower() switch
-            {
-                "createdat" => q => q.CreatedAt,
-                "level" => q => q.Level,
-                "type" => q => q.Type,
-                "status" => q => q.Status,
-                _ => q => q.Id
-            };
-        }
-
-        protected override Expression<Func<Question, bool>> GetPagingFilter(SearchQuestionRequest request)
-        {
-            return q =>
-                (string.IsNullOrEmpty(request.StringContent) || q.StringContent.Contains(request.StringContent)) &&
-                (!request.TopicId.HasValue || q.TopicId == request.TopicId.Value) &&
-                (string.IsNullOrEmpty(request.Type) || q.Type.ToString() == request.Type) &&
-                (string.IsNullOrEmpty(request.Level) || q.Level.ToString() == request.Level) &&
-                (string.IsNullOrEmpty(request.Status) || q.Status.ToString() == request.Status);
-        }
-
-        protected override async Task<Question> MapFromCreateToEntityAsync(CreateQuestionRequest request)
+        private async Task<Question> MapFromCreateRequestAsync(CreateQuestionRequest request)
         {
             var answers = new AnswersDto
             {
@@ -101,45 +209,7 @@ namespace Feature.Quizzes.Services
             };
         }
 
-        protected override QuestionDetailDto MapFromEntityToDetail(Question entity)
-        {
-            var answers = JsonSerializer.Deserialize<AnswersDto>(entity.AnswerJsonData);
-
-            return new QuestionDetailDto
-            {
-                Id = entity.Id,
-                Slug = entity.Slug,
-                StringContent = entity.StringContent,
-                ImageUrl = entity.ImageUrl,
-                AudioUrl = entity.AudioUrl,
-                VideoUrl = entity.VideoUrl,
-                Type = entity.Type,
-                Level = entity.Level,
-                Status = entity.Status,
-                TopicId = entity.TopicId,
-                TopicName = entity.Topic?.Name ?? string.Empty,
-                CreatedAt = entity.CreatedAt,
-                CorrectAnswers = answers?.CorrectAnswers ?? new List<string>(),
-                StringAnswers = answers?.StringAnswers ?? new List<string>()
-            };
-        }
-
-        protected override QuestionListItemDto MapFromEntityToListItem(Question entity)
-        {
-            return new QuestionListItemDto
-            {
-                Id = entity.Id,
-                Slug = entity.Slug,
-                StringContent = entity.StringContent,
-                Type = entity.Type,
-                Level = entity.Level,
-                Status = entity.Status,
-                TopicName = entity.Topic?.Name ?? string.Empty,
-                CreatedAt = entity.CreatedAt
-            };
-        }
-
-        protected override async Task UpdateEntityAsync(Question entity, UpdateQuestionRequest request)
+        private async Task UpdateEntityAsync(Question entity, UpdateQuestionRequest request)
         {
             var answers = new AnswersDto
             {
@@ -190,12 +260,10 @@ namespace Feature.Quizzes.Services
                 case QuestionType.TrueFalse:
                     if (stringAnswers.Count != 2)
                     {
-                        _logService.LogError($"Validate failed: TrueFalse needs 2 answers, got {stringAnswers.Count}");
                         throw new BadRequestException("True/False question must have exactly 2 answers");
                     }
                     if (correctAnswers.Count != 1)
                     {
-                        _logService.LogError($"Validate failed: TrueFalse needs 1 correct, got {correctAnswers.Count}");
                         throw new BadRequestException("True/False question must have exactly 1 correct answer");
                     }
                     break;
@@ -203,12 +271,10 @@ namespace Feature.Quizzes.Services
                 case QuestionType.SingleChoice:
                     if (stringAnswers.Count < 2)
                     {
-                        _logService.LogError($"Validate failed: SingleChoice needs 2+ answers, got {stringAnswers.Count}");
                         throw new BadRequestException("Single Choice question must have at least 2 answers");
                     }
                     if (correctAnswers.Count != 1)
                     {
-                        _logService.LogError($"Validate failed: SingleChoice needs 1 correct, got {correctAnswers.Count}");
                         throw new BadRequestException("Single Choice question must have exactly 1 correct answer");
                     }
                     break;
@@ -216,17 +282,14 @@ namespace Feature.Quizzes.Services
                 case QuestionType.MultipleChoice:
                     if (stringAnswers.Count < 2)
                     {
-                        _logService.LogError($"Validate failed: MultipleChoice needs 2+ answers, got {stringAnswers.Count}");
                         throw new BadRequestException("Multiple Choice question must have at least 2 answers");
                     }
                     if (correctAnswers.Count < 1)
                     {
-                        _logService.LogError($"Validate failed: MultipleChoice needs 1+ correct, got {correctAnswers.Count}");
                         throw new BadRequestException("Multiple Choice question must have at least 1 correct answer");
                     }
                     if (correctAnswers.Count >= stringAnswers.Count)
                     {
-                        _logService.LogError($"Validate failed: Correct ({correctAnswers.Count}) >= Total ({stringAnswers.Count})");
                         throw new BadRequestException("Number of correct answers must be less than total answers");
                     }
                     break;
@@ -236,7 +299,6 @@ namespace Feature.Quizzes.Services
             {
                 if (!stringAnswers.Contains(correctAnswer))
                 {
-                    _logService.LogError($"Validate failed: Correct answer '{correctAnswer}' not in list");
                     throw new BadRequestException($"Correct answer '{correctAnswer}' is not in the answer list");
                 }
             }

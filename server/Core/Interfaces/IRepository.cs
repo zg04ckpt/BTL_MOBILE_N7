@@ -17,7 +17,7 @@ namespace Core.Interfaces
             Expression<Func<TEntity, bool>> predicate,
             int? pageIndex = null,
             int? pageSize = null,
-            Expression<Func<TEntity, object>>? orderBy = null,
+            string? orderBy = null,
             bool? asc = null,
             params Expression<Func<TEntity, object>>[] includes);
 
@@ -26,7 +26,7 @@ namespace Core.Interfaces
             Expression<Func<TEntity, TResult>> selector,
             int? pageIndex = null,
             int? pageSize = null,
-            Expression<Func<TEntity, object>>? orderBy = null,
+            string? orderBy = null,
             bool? asc = null);
 
         Task<Paginated<TResult>> GetPagingAsync<TResult>(
@@ -34,7 +34,7 @@ namespace Core.Interfaces
             Expression<Func<TEntity, TResult>> selector,
             int pageIndex,
             int pageSize,
-            Expression<Func<TEntity, object>> orderBy,
+            string orderBy,
             bool asc);
 
         Task<bool> ExistsAsync(

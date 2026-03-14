@@ -1,6 +1,5 @@
-package com.n7.quizbattle.activities.adapters;
+package com.n7.quizbattle.adapters;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +11,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.n7.quizbattle.R;
-import com.n7.quizbattle.activities.models.MatchHistory;
+import com.n7.quizbattle.models.MatchHistory;
 
 import java.util.List;
 

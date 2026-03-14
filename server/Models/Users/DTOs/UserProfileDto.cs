@@ -7,8 +7,10 @@
         public string AvatarUrl { get; set; }
         public int Level { get; set; }
         public int Rank { get; set; }
+        public int Exp { get; set; }
         public int RankScore { get; set; }
         public int WinningStreak { get; set; }
-        public decimal WinningRate { get; set; }
+        public float WinningRate { get; set; }
+        public int NumberOfMatchs { get; set; }
     }
 }

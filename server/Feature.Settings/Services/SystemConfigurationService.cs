@@ -1,4 +1,3 @@
-using CNLib.Services.Logs;
 using Core.Base;
 using Core.Interfaces;
 using Feature.Settings.Interfaces;
@@ -12,11 +11,8 @@ namespace Feature.Settings.Services
 {
     public class SystemConfigurationService : BaseService, ISystemConfigurationService
     {
-        private readonly ILogService<SystemConfigurationService> _logService;
-
-        public SystemConfigurationService(IUnitOfWork uow, ILogService<SystemConfigurationService> logService) : base(uow)
+        public SystemConfigurationService(IUnitOfWork uow) : base(uow)
         {
-            _logService = logService;
         }
 
         public async Task<SystemConfigurationsDto> GetSystemConfigurationsAsync()
@@ -243,8 +239,6 @@ namespace Feature.Settings.Services
 
             await repository.AddAsync(defaultConfigs);
             await _uow.SaveChangesAsync();
-            
-            _logService.LogSuccess($"Default configs initialized: {defaultConfigs.Length} items");
         }
 
         private static bool GetBoolValue(Dictionary<string, string> dict, string key, bool defaultValue)

@@ -3,6 +3,7 @@
     public class UserRankDto : UserRankListItemDto
     {
         public int NumberOfMatchs { get; set; }
-        public decimal WinRate { get; set; }
+        public float WinningRate { get; set; }
+        public int WinningStreak { get; set; }
     }
 }

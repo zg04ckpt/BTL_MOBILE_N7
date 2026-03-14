@@ -16,36 +16,36 @@ namespace Core.Utilities
 
         public class ExceptionMessages
         {
-            public const string NOT_EXIST = "Lỗi xảy ra do không tồn tại";
+            public const string NOT_EXIST = "An error occurred because the resource does not exist";
         }
 
         public class ApiMessages
         {
-            public const string MaxDevice = "Số lượng thiết bị đăng nhập đã đạt tối đa";
-            public const string UserNotFound = "Người dùng không tồn tại";
-            public const string UserIsBanned = "Tài khoản đang bị khóa";
-            public const string PasswordNotSet = "Mật khẩu chưa được thiết lập, vui lòng đăng nhập bằng tài khoản liên kết";
-            public const string PasswordIncorrect = "Mật khẩu chưa chính xác";
-            public const string InvalidCredential = "Thông tin xác thực không hợp lệ";
-            public const string UnknownError = "Lỗi không xác định";
-            public const string DataInitialError = "Khởi tạo dữ liệu thất bại";
-            public const string LockReasonNotSet = "Vui lòng cung cấp lí do khóa tài khoản";
-            public const string Updated = "Cập nhật thành công";
-            public const string Deleted = "Đã xóa thành công";
+            public const string MaxDevice = "Maximum number of signed-in devices reached";
+            public const string UserNotFound = "User not found";
+            public const string UserIsBanned = "Account is banned";
+            public const string PasswordNotSet = "Password is not set. Please sign in with a linked account";
+            public const string PasswordIncorrect = "Incorrect password";
+            public const string InvalidCredential = "Invalid credentials";
+            public const string UnknownError = "Unknown error";
+            public const string DataInitialError = "Data initialization failed";
+            public const string LockReasonNotSet = "Please provide a reason for locking the account";
+            public const string Updated = "Updated successfully";
+            public const string Deleted = "Deleted successfully";
 
-            public const string FileNotExist = "File không tồn tại";
-            public const string DownloadProgressNotExist = "Tiến trình tải không tồn tại";
-            public const string ProgressNotCompleted = "Tiến trình tải chưa hoàn thành";
-            public const string RequiredFormatId = "Vui lòng cùng cấp format ID cho video/audio";
+            public const string FileNotExist = "File does not exist";
+            public const string DownloadProgressNotExist = "Download progress does not exist";
+            public const string ProgressNotCompleted = "Download progress is not completed";
+            public const string RequiredFormatId = "Please provide the format ID for video/audio";
         }
 
         public class LogMessages
         {
-            public const string UserCreatedFromGoogleAccount = "Tạo tài khoản từ Google Account";
-            public const string UserLoggedIn = "Đã đăng nhập";
-            public const string UserLoggedOut = "Đã đăng xuất";
-            public static Func<string, string> UserIsLocked = reason => "Bị khóa tài khoản: " + reason;
-            public const string UserIsUnlocked = "Đã mở khóa tài khoản";
+            public const string UserCreatedFromGoogleAccount = "User created from Google account";
+            public const string UserLoggedIn = "User logged in";
+            public const string UserLoggedOut = "User logged out";
+            public static Func<string, string> UserIsLocked = reason => "Account locked: " + reason;
+            public const string UserIsUnlocked = "Account unlocked";
         }
 
         public static int GetUserIdFromClaim(ClaimsPrincipal claims)

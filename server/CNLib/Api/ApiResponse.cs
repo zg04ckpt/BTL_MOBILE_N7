@@ -43,7 +43,7 @@ namespace CNLib.Api
             return new ApiError
             {
                 Success = false,
-                ErrorMessage = errorMessage ?? "Lỗi chưa xác định",
+                ErrorMessage = errorMessage ?? "Unknown error",
                 ErrorCode = ApiErrorCodes.InternalError
             };
         }

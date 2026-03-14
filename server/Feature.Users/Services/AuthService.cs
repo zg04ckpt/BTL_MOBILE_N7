@@ -1,5 +1,4 @@
-﻿using CNLib.Services.Logs;
-using Core.Base;
+﻿using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Utilities;
@@ -18,12 +17,10 @@ namespace Feature.Users.Services
 {
     public class AuthService : BaseService, IAuthService
     {
-        private readonly ILogService<AuthService> _logService;
         private readonly IConfiguration _configuration;
 
-        public AuthService(IUnitOfWork uow, ILogService<AuthService> logService, IConfiguration configuration) : base(uow)
+        public AuthService(IUnitOfWork uow, IConfiguration configuration) : base(uow)
         {
-            _logService = logService;
             _configuration = configuration;
         }
 
@@ -38,32 +35,27 @@ namespace Feature.Users.Services
 
             if (user == null)
             {
-                _logService.LogError($"Login failed: {request.Email}");
-                throw new UnauthorizedException("Email hoặc mật khẩu không chính xác");
+                throw new UnauthorizedException("Invalid email or password");
             }
 
             if (user.Status == AccountStatus.Banned)
             {
-                _logService.LogError($"Login blocked: Banned account #{user.Id}");
-                throw new UnauthorizedException("Tài khoản đã bị khóa");
+                throw new UnauthorizedException("Account is banned");
             }
 
             if (user.Status == AccountStatus.Deleted)
             {
-                _logService.LogError($"Login blocked: Deleted account #{user.Id}");
-                throw new UnauthorizedException("Tài khoản không tồn tại");
+                throw new UnauthorizedException("Account does not exist");
             }
 
             if (user.Status == AccountStatus.Inactive)
             {
-                _logService.LogError($"Login blocked: Inactive account #{user.Id}");
-                throw new UnauthorizedException("Tài khoản chưa được kích hoạt");
+                throw new UnauthorizedException("Account is not activated");
             }
 
             if (!PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
             {
-                _logService.LogError($"Login failed: Wrong password for #{user.Id}");
-                throw new UnauthorizedException("Email hoặc mật khẩu không chính xác");
+                throw new UnauthorizedException("Invalid email or password");
             }
 
             var token = GenerateJwtToken(user, loginLiveTimeMinutes ?? 10080);
@@ -87,15 +79,13 @@ namespace Feature.Users.Services
             var existingUserByEmail = await userRepository.ExistsAsync(u => u.Email == request.Email);
             if (existingUserByEmail)
             {
-                _logService.LogError($"Register failed: Email exists - {request.Email}");
-                throw new BadRequestException("Email đã được sử dụng");
+                throw new BadRequestException("Email is already in use");
             }
 
             var existingUserByPhone = await userRepository.ExistsAsync(u => u.PhoneNumber == request.PhoneNumber);
             if (existingUserByPhone)
             {
-                _logService.LogError($"Register failed: Phone exists - {request.PhoneNumber}");
-                throw new BadRequestException("Số điện thoại đã được sử dụng");
+                throw new BadRequestException("Phone number is already in use");
             }
 
             var newUser = new User
@@ -116,8 +106,6 @@ namespace Feature.Users.Services
 
             await userRepository.AddAsync(newUser);
             await _uow.SaveChangesAsync();
-            
-            _logService.LogSuccess($"User registered: {newUser.Email}");
         }
 
         private string GenerateJwtToken(User user, int loginLiveTimeMinutes)

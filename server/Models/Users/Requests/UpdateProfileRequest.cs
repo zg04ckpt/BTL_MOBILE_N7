@@ -5,8 +5,8 @@ namespace Models.Users.Requests
 {
     public class UpdateProfileRequest
     {
-        [Required(ErrorMessage = "Tên hiển thị là bắt buộc")]
-        [MaxLength(50, ErrorMessage = "Tên hiển thị không được vượt quá 50 kí tự")]
+        [Required(ErrorMessage = "Display name is required")]
+        [MaxLength(50, ErrorMessage = "Display name must not exceed 50 characters")]
         public string Name { get; set; }
 
         public IFormFile? Avatar { get; set; }

@@ -1,6 +1,7 @@
 ﻿using Core.Interfaces;
 using Core.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
 namespace Data
@@ -40,7 +41,7 @@ namespace Data
             Expression<Func<TEntity, TResult>> selector, 
             int? pageIndex = null, 
             int? pageSize = null,
-            Expression<Func<TEntity, object>>? orderBy = null,
+            string? orderBy = null,
             bool? asc = null)
         {
             IQueryable<TEntity> query = _dbSet.Where(predicate);
@@ -48,14 +49,7 @@ namespace Data
             // Sắp xếp
             if (orderBy is not null && asc.HasValue)
             {
-                if (asc.Value)
-                {
-                    query = query.OrderBy(orderBy);
-                }
-                else
-                {
-                    query = query.OrderByDescending(orderBy);
-                }
+                query = query.OrderBy($"{orderBy} {(asc.Value? "asc":"desc")}");
             }
 
             // Phân trang
@@ -72,7 +66,7 @@ namespace Data
             Expression<Func<TEntity, bool>> predicate,
             int? pageIndex = null,
             int? pageSize = null,
-            Expression<Func<TEntity, object>>? orderBy = null,
+            string? orderBy = null,
             bool? asc = null, 
             params Expression<Func<TEntity, object>>[] includes)
         {
@@ -81,14 +75,7 @@ namespace Data
             // Sắp xếp
             if (orderBy is not null && asc.HasValue)
             {
-                if (asc.Value)
-                {
-                    query = query.OrderBy(orderBy);
-                }
-                else
-                {
-                    query = query.OrderByDescending(orderBy);
-                }
+                query = query.OrderBy($"{orderBy} {(asc.Value ? "asc" : "desc")}");
             }
 
             // Phân trang
@@ -113,21 +100,14 @@ namespace Data
             Expression<Func<TEntity, bool>> predicate, 
             Expression<Func<TEntity, TResult>> selector, 
             int pageIndex, 
-            int pageSize, 
-            Expression<Func<TEntity, object>> orderBy, 
+            int pageSize,
+            string orderBy, 
             bool asc)
         {
             IQueryable<TEntity> query = _dbSet.Where(predicate);
 
             // Sắp xếp
-            if (asc)
-            {
-                query = query.OrderBy(orderBy);
-            }
-            else
-            {
-                query = query.OrderByDescending(orderBy);
-            }
+            query = query.OrderBy($"{orderBy} {(asc ? "asc" : "desc")}");
 
             // Phân trang
             var total = await query.CountAsync();

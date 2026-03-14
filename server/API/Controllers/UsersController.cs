@@ -43,7 +43,7 @@ namespace API.Controllers
             if (user == null)
             {
                 _logService.LogError($"[API] User not found: #{id}");
-                return NotFound(ApiResponse.Failure("Người dùng không tồn tại"));
+                return NotFound(ApiResponse.Failure("User not found"));
             }
 
             return Ok(ApiResponse.Success(user));
@@ -66,14 +66,14 @@ namespace API.Controllers
         {
             var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _userService.UpdateProfileAsync(id, request);
-            return Ok(ApiResponse.Success("Cập nhật thông tin thành công", result));
+            return Ok(ApiResponse.Success("Profile updated successfully", result));
         }
 
         [HttpPost] 
         public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
         {
             var result = await _userService.CreateAsync(request);
-            return Ok(ApiResponse.Success("Tạo người dùng thành công", result));
+            return Ok(ApiResponse.Success("User created successfully", result));
         }
 
 
@@ -83,7 +83,7 @@ namespace API.Controllers
         public async Task<IActionResult> Update(int id, [FromForm] UpdateUserRequest request)
         {
             var result = await _userService.UpdateAsync(id, request);
-            return Ok(ApiResponse.Success("Cập nhật thông tin thành công", result));
+            return Ok(ApiResponse.Success("User updated successfully", result));
         }
 
 
@@ -91,7 +91,7 @@ namespace API.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _userService.DeleteAsync(id);
-            return Ok(ApiResponse.Success("Xóa người dùng thành công", result));
+            return Ok(ApiResponse.Success("User deleted successfully", result));
         }
     }
 }

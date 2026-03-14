@@ -1,4 +1,5 @@
-﻿using Models.Users.Enums;
+﻿using Feature.Users.Entities;
+using Models.Users.Enums;
 
 namespace Models.Users.DTOs
 {

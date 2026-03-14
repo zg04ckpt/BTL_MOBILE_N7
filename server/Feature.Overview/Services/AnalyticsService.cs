@@ -1,4 +1,3 @@
-using CNLib.Services.Logs;
 using Core.Base;
 using Core.Interfaces;
 using Core.Models;
@@ -13,11 +12,8 @@ namespace Feature.Overview.Services
 {
     public class AnalyticsService : BaseService, IAnalyticsService
     {
-        private readonly ILogService<AnalyticsService> _logService;
-
-        public AnalyticsService(IUnitOfWork uow, ILogService<AnalyticsService> logService) : base(uow)
+        public AnalyticsService(IUnitOfWork uow) : base(uow)
         {
-            _logService = logService;
         }
 
         public async Task<SystemAnalyticsDto> GetSystemAnalyticsAsync(AnalyticsFilterRequest filter)
@@ -61,7 +57,7 @@ namespace Feature.Overview.Services
                 },
                 pageIndex: request.PageIndex,
                 pageSize: request.PageSize,
-                orderBy: u => u.CreatedAt,
+                orderBy: nameof(User.CreatedAt),
                 asc: false
             );
             
@@ -219,7 +215,7 @@ namespace Feature.Overview.Services
                 },
                 pageIndex: 1,
                 pageSize: limit,
-                orderBy: u => u.CreatedAt,
+                orderBy: nameof(User.CreatedAt),
                 asc: false
             );
 

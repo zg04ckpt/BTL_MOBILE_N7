@@ -1,6 +1,7 @@
 ﻿using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Models.Matchs.Entities;
 using Models.Users.Enums;
 
 namespace Feature.Users.Entities
@@ -21,6 +22,8 @@ namespace Feature.Users.Entities
         public DateTime CreatedAt { get; set; }
         public int RoleId { get; set; }
         public Role Role { get; set; }
+
+        public List<UserMatchResultHistory> Histories { get; set; }
     }
 
     public class UserConfig : IEntityTypeConfiguration<User>

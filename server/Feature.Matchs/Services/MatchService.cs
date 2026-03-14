@@ -75,7 +75,7 @@ namespace Feature.Matchs.Services
                 predicate: filterBuilder,
                 pageIndex: request.PageIndex,
                 pageSize: request.PageSize,
-                orderBy: e => request.OrderBy == null ? e.CreatedAt: request.OrderBy,
+                orderBy: request.OrderBy ?? nameof(Match.CreatedAt),
                 asc: request.IsAsc,
                 selector: e => new MatchListItemDto
                 {
@@ -359,7 +359,7 @@ namespace Feature.Matchs.Services
             var results = await _uow.Repository<Match>().GetAllAsync(
                 predicate: m => m.Status == MatchStatus.Ended
                              && m.Users.Any(u => u.UserId == userId),
-                orderBy: m => m.EndedAt,
+                orderBy: nameof(Match.EndedAt),
                 asc: false,
                 pageIndex: 1,
                 pageSize: 1,

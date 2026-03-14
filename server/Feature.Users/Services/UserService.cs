@@ -1,80 +1,81 @@
-﻿using CNLib.Services.Logs;
-using Core.Base;
+﻿using Core.Base;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Core.Utilities;
+using Feature.Overview.Interfaces;
 using Feature.Users.Entities;
 using Feature.Users.Interfaces;
+using LinqKit;
+using Models.Matchs.Enums;
 using Models.Users.DTOs;
 using Models.Users.Enums;
 using Models.Users.Requests;
-using System.Linq.Expressions;
 
 namespace Feature.Users.Services
 {
     public class UserService
-        : CrudWithPagingService<User, CreateUserRequest, UpdateUserRequest, UserListItemDto, UserDetailDto, SearchUserRequest>, IUserService
+        : BaseService, IUserService, ICrudWithPagingService<User, CreateUserRequest, UpdateUserRequest, UserListItemDto, UserDetailDto, SearchUserRequest>
     {
         private readonly IStorageService _storageService;
-        private readonly ILogService<UserService> _logService;
+        private readonly IRankService _rankService;
 
-        public UserService(IUnitOfWork uow, IStorageService storageService, ILogService<UserService> logService) : base(uow)
+        public UserService(
+            IUnitOfWork uow, 
+            IStorageService storageService, 
+            IRankService rankService) : base(uow)
         {
             _storageService = storageService;
-            _logService = logService;
+            _rankService = rankService;
         }
 
         public async Task<UserProfileDto> GetProfileAsync(int userId)
         {
-            var userRepository = _uow.Repository<User>();
+            var userRepo = _uow.Repository<User>();
 
-            var user = await userRepository.GetFirstAsync(
-                predicate: u => u.Id == userId
-            );
+            // Get profile
+            var user = await userRepo.GetFirstAsync(
+                predicate: u => u.Id == userId,
+                selector: user => new
+                {
+                    user.Id,
+                    user.Name,
+                    user.AvatarUrl,
+                    user.Level,
+                    user.Exp
+                }
+            ) ?? throw new NotFoundException("User not found");
 
-            if (user == null)
-            {
-                _logService.LogError($"Profile not found: #{userId}");
-                throw new NotFoundException("Người dùng không tồn tại");
-            }
+            // Get rank info
+            var rankInfo = await _rankService.GetRankInfoAsync(userId);
 
-            //var userInMatchHistory = await _uow.Repository<>
-            
             return new UserProfileDto
             {
                 Id = user.Id,
                 Name = user.Name,
                 AvatarUrl = user.AvatarUrl,
                 Level = user.Level,
-                Rank = user.Rank,
-                RankScore = user.RankScore,
-                WinningStreak = 0,
-                WinningRate = 0
+                Rank = rankInfo.Rank,
+                RankScore = rankInfo.RankScore,
+                WinningStreak = rankInfo.WinningStreak,
+                WinningRate = rankInfo.WinningRate,
+                Exp = user.Exp,
+                NumberOfMatchs = rankInfo.NumberOfMatchs,
             };
-        } 
+        }
 
         public async Task<ChangedResponse> UpdateProfileAsync(int userId, UpdateProfileRequest request)
         {
             var userRepository = _uow.Repository<User>();
-            
-            var user = await userRepository.GetFirstAsync(u => u.Id == userId);
-            
-            if (user == null)
-            {
-                _logService.LogError($"Update profile failed: User #{userId} not found");
-                throw new NotFoundException("Người dùng không tồn tại");
-            }
+            var user = await GetEntityAsync<User>(userId);
 
             if (user.Name != request.Name 
                 && await userRepository.ExistsAsync(u => u.Id != userId && u.Name == request.Name))
             {
-                _logService.LogError($"Update profile failed: Name exists - {request.Name}");
-                throw new BadRequestException("Tên hiển thị đã được sử dụng");
+                throw new BadRequestException("Name already used");
             }
 
             user.Name = request.Name;
-
             if (request.Avatar != null)
             {
                 if (!string.IsNullOrEmpty(user.AvatarUrl))
@@ -88,15 +89,10 @@ namespace Feature.Users.Services
             await userRepository.UpdateAsync(user);
             await _uow.SaveChangesAsync();
 
-            _logService.LogSuccess($"Profile updated: #{userId}");
-
-            return new ChangedResponse
-            {
-                Id = user.Id
-            };
+            return ChangedResponse.FromEntity(user);
         }
 
-        public async override Task<IEnumerable<UserListItemDto>> GetAllAsync()
+        public async Task<IEnumerable<UserListItemDto>> GetAllAsync()
         {
             return await _uow.Repository<User>().GetAllAsync(
                 predicate: e => true,
@@ -111,13 +107,27 @@ namespace Feature.Users.Services
                 });
         }
 
-        public override async Task<Paginated<UserListItemDto>> GetPagingAsync(SearchUserRequest request)
+        public async Task<Paginated<UserListItemDto>> GetPagingAsync(SearchUserRequest request)
         {
-            var entities = await _uow.Repository<User>().GetAllAsync(
-                predicate: GetPagingFilter(request),
+            var filter = PredicateBuilder.New<User>(true);
+            if (request.Name != null)
+            {
+                filter = filter.And(e => e.Name.Contains(request.Name));
+            }
+            if (request.Phone != null)
+            {
+                filter = filter.And(e => e.PhoneNumber.Contains(request.Phone));
+            }
+            if (request.Email != null)
+            {
+                filter = filter.And(e => e.Email.Contains(request.Email));
+            }
+
+            var entities = await _uow.Repository<User>().GetPagingAsync(
+                predicate: filter,
                 pageIndex: request.PageIndex,
                 pageSize: request.PageSize,
-                orderBy: GetOrderBy(request.OrderBy),
+                orderBy: request.OrderBy ?? nameof(User.Name),
                 asc: request.IsAsc,
                 selector: e => new UserListItemDto
                 {
@@ -129,19 +139,10 @@ namespace Feature.Users.Services
                     RoleName = e.Role.Name
                 });
 
-            var totalItems = await _uow.Repository<User>().CountAsync(
-                predicate: GetPagingFilter(request));
-
-            return new Paginated<UserListItemDto>
-            {
-                Items = entities,
-                PageIndex = request.PageIndex,
-                PageSize = request.PageSize,
-                TotalItems = totalItems
-            };
+            return entities;
         }
 
-        protected override async Task ConfirmValidCreateDataAsync(CreateUserRequest request)
+        private async Task ConfirmValidCreateDataAsync(CreateUserRequest request)
         {
             var userRepository = _uow.Repository<User>();
 
@@ -156,73 +157,71 @@ namespace Feature.Users.Services
             {
                 if (existedUser.Email == request.Email)
                 {
-                    _logService.LogError($"Create user failed: Email exists - {request.Email}");
-                    throw new BadRequestException("Email đã được sử dụng");
+                    throw new BadRequestException("Email is already in use");
                 }
 
                 if (existedUser.PhoneNumber == request.PhoneNumber)
                 {
-                    _logService.LogError($"Create user failed: Phone exists - {request.PhoneNumber}");
-                    throw new BadRequestException("Số điện thoại đã được sử dụng");
+                    throw new BadRequestException("Phone number is already in use");
                 }
 
                 if (existedUser.Name == request.Name)
                 {
-                    _logService.LogError($"Create user failed: Name exists - {request.Name}");
-                    throw new BadRequestException("Tên hiển thị đã được sử dụng");
+                    throw new BadRequestException("Display name is already in use");
                 }
             }
         }
 
-        protected override async Task ConfirmValidUpdateDataAsync(User entity, UpdateUserRequest request)
+        private async Task ConfirmValidUpdateDataAsync(User entity, UpdateUserRequest request)
         {
             var userRepository = _uow.Repository<User>();
 
             if (entity.Name != request.Name 
                 && await userRepository.ExistsAsync(u => u.Id != entity.Id && u.Name == request.Name))
             {
-                _logService.LogError($"Update user failed: Name exists - {request.Name}");
-                throw new BadRequestException("Tên hiển thị đã được sử dụng");
+                throw new BadRequestException("Display name is already in use");
             }
 
             if (entity.Email != request.Email
                 && await userRepository.ExistsAsync(u => u.Id != entity.Id && u.Email == request.Email))
             {
-                _logService.LogError($"Update user failed: Email exists - {request.Email}");
-                throw new BadRequestException("Email đã được sử dụng");
+                throw new BadRequestException("Email is already in use");
             }
 
             if (entity.PhoneNumber != request.PhoneNumber
                 && await userRepository.ExistsAsync(u => u.Id != entity.Id && u.PhoneNumber == request.PhoneNumber))
             {
-                _logService.LogError($"Update user failed: Phone exists - {request.PhoneNumber}");
-                throw new BadRequestException("Số điện thoại đã được sử dụng");
+                throw new BadRequestException("Phone number is already in use");
             }
         }
 
-        protected override Expression<Func<User, object>> GetOrderBy(string? orderBy)
+        public async Task<UserDetailDto?> GetByIdAsync(int id)
         {
-            return orderBy?.ToLower() switch
-            {
-                "name" => u => u.Name,
-                "email" => u => u.Email,
-                "createdat" => u => u.CreatedAt,
-                "level" => u => u.Level,
-                "rank" => u => u.Rank,
-                _ => u => u.Id
-            };
+            return await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == id,
+                selector: entity => new UserDetailDto
+                {
+                    Id = entity.Id,
+                    AvatarUrl = entity.AvatarUrl,
+                    PhoneNumber = entity.PhoneNumber,
+                    Name = entity.Name,
+                    Email = entity.Email,
+                    Status = entity.Status,
+                    Level = entity.Level,
+                    Rank = entity.Rank,
+                    RankScore = entity.RankScore,
+                    Exp = entity.Exp,
+                    CreatedAt = entity.CreatedAt,
+                    RoleId = entity.RoleId,
+                    RoleName = entity.Role.Name
+                })
+                ?? throw new NotFoundException("User not found");
         }
 
-        protected override Expression<Func<User, bool>> GetPagingFilter(SearchUserRequest request)
+        public async Task<ChangedResponse> CreateAsync(CreateUserRequest request)
         {
-            return u => 
-                (string.IsNullOrEmpty(request.Email) || u.Email.Contains(request.Email)) &&
-                (string.IsNullOrEmpty(request.Phone) || u.PhoneNumber.Contains(request.Phone)) &&
-                (string.IsNullOrEmpty(request.Name) || u.Name.Contains(request.Name));
-        }
+            await ConfirmValidCreateDataAsync(request);
 
-        protected override Task<User> MapFromCreateToEntityAsync(CreateUserRequest request)
-        {
             var user = new User
             {
                 Name = request.Name,
@@ -239,63 +238,52 @@ namespace Feature.Users.Services
                 AvatarUrl = string.Empty
             };
 
-            return Task.FromResult(user);
+            await _uow.Repository<User>().AddAsync(user);
+            await _uow.SaveChangesAsync();
+
+            return ChangedResponse.FromEntity(user);
         }
 
-        protected override UserDetailDto MapFromEntityToDetail(User entity)
+        public async Task<ChangedResponse> UpdateAsync(int id, UpdateUserRequest request)
         {
-            return new UserDetailDto
-            {
-                Id = entity.Id,
-                AvatarUrl = entity.AvatarUrl,
-                PhoneNumber = entity.PhoneNumber,
-                Name = entity.Name,
-                Email = entity.Email,
-                Status = entity.Status,
-                Level = entity.Level,
-                Rank = entity.Rank,
-                RankScore = entity.RankScore,
-                Exp = entity.Exp,
-                CreatedAt = entity.CreatedAt,
-                RoleId = entity.RoleId,
-                RoleName = entity.Role?.Name ?? string.Empty
-            };
-        }
+            var user = await GetEntityAsync<User>(id);
 
-        protected override UserListItemDto MapFromEntityToListItem(User entity)
-        {
-            return new UserListItemDto
-            {
-                Id = entity.Id,
-                Name = entity.Name,
-                Email = entity.Email,
-                AvatarUrl = entity.AvatarUrl,
-                Status = entity.Status,
-                RoleName = entity.Role?.Name ?? string.Empty
-            };
-        }
+            await ConfirmValidUpdateDataAsync(user, request);
 
-        protected override async Task UpdateEntityAsync(User entity, UpdateUserRequest request)
-        {
-            entity.Name = request.Name;
-            entity.Email = request.Email;
-            entity.PhoneNumber = request.PhoneNumber;
-            entity.Status = request.Status;
-            entity.Level = request.Level;
-            entity.Rank = request.Rank;
-            entity.RankScore = request.RankScore;
-            entity.Exp = request.Exp;
-            entity.RoleId = request.RoleId;
+            user.Name = request.Name;
+            user.Email = request.Email;
+            user.PhoneNumber = request.PhoneNumber;
+            user.Status = request.Status;
+            user.Level = request.Level;
+            user.Rank = request.Rank;
+            user.RankScore = request.RankScore;
+            user.Exp = request.Exp;
+            user.RoleId = request.RoleId;
 
             if (request.Avatar != null)
             {
-                if (!string.IsNullOrEmpty(entity.AvatarUrl))
+                if (!string.IsNullOrEmpty(user.AvatarUrl))
                 {
-                    await _storageService.DeleteAsync(entity.AvatarUrl);
+                    await _storageService.DeleteAsync(user.AvatarUrl);
                 }
 
-                entity.AvatarUrl = await _storageService.SaveAsync(request.Avatar);
+                user.AvatarUrl = await _storageService.SaveAsync(request.Avatar);
             }
+
+            await _uow.Repository<User>().UpdateAsync(user);
+            await _uow.SaveChangesAsync();
+
+            return ChangedResponse.FromEntity(user);
+        }
+
+        public async Task<ChangedResponse> DeleteAsync(int id)
+        {
+            var user = await GetEntityAsync<User>(id);
+
+            await _uow.Repository<User>().DeleteAsync(user);
+            await _uow.SaveChangesAsync();
+
+            return ChangedResponse.FromEntity(user);
         }
     }
 }

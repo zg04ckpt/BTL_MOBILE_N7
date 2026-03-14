@@ -1,4 +1,4 @@
-package com.n7.quizbattle.activities.models;
+package com.n7.quizbattle.models;
 
 public class MatchHistory {
     private int avatarRes;

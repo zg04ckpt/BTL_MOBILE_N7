@@ -13,6 +13,7 @@ namespace Models.Matchs.Entities
         public int Progress { get; set; }
         public int Correct { get; set; }
         public int Score { get; set; }
+        public int Rank { get; set; }
         public UserInMatchStatus Status { get; set; }
         public int ExpScoreGained { get; set; }
         public int RankScoreGained { get; set; }
@@ -34,7 +35,7 @@ namespace Models.Matchs.Entities
             builder.Property(x => x.Status).HasConversion<string>();
 
             builder.HasOne(x => x.User)
-                .WithMany()
+                .WithMany(x => x.Histories)
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
