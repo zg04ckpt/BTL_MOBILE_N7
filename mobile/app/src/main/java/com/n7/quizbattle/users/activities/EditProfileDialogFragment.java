@@ -1,4 +1,4 @@
-package com.n7.quizbattle.activities;
+package com.n7.quizbattle.users.activities;
 
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;

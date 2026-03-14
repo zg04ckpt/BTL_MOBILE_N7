@@ -1,4 +1,4 @@
-package com.n7.quizbattle.activities;
+package com.n7.quizbattle.home_rank.activities;
 
 import android.os.Bundle;
 import android.view.View;

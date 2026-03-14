@@ -1,4 +1,4 @@
-package com.n7.quizbattle.adapters;
+package com.n7.quizbattle.battles.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +11,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.n7.quizbattle.R;
-import com.n7.quizbattle.models.MatchHistory;
+import com.n7.quizbattle.battles.models.MatchHistory;
 
 import java.util.List;
 

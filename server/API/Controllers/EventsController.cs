@@ -39,6 +39,15 @@ namespace API.Controllers
             return Ok(ApiResponse.Success(progresses));
         }
 
+        [HttpGet("users/my-progresses")]
+        [Authorize]
+        public async Task<IActionResult> GetMyProgresses()
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var progresses = await _eventService.GetUserInEventProgressesAsync(userId);
+            return Ok(ApiResponse.Success(progresses));
+        }
+
         [HttpPut("my-progress")]
         [Authorize]
         public async Task<IActionResult> UpdateMyProgress([FromBody] UpdateMyEventProgressRequest request)

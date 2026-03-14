@@ -4,6 +4,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".battles.activities.MatchResultActivity"
     android:background="@drawable/bg_result">
 
     <!-- Tiêu đề Kết quả xếp hạng -->

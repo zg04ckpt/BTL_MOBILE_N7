@@ -2,6 +2,7 @@
 using Feature.Matchs.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Models.Matchs.Enums;
+using Core.Models;
 using Models.Matchs.Realtimes;
 
 namespace API.Controllers
@@ -25,7 +26,11 @@ namespace API.Controllers
         public IActionResult TestRunning()
         {
             _logService.LogInfo("Received tesing request");
-            return Ok("API running ...");
+            return Ok(ApiResponse.Success(new
+            {
+                Id = 1,
+                Name = "Api running ..."
+            }));
         }
 
         [HttpGet("realtime/create-test-lobby-room")]

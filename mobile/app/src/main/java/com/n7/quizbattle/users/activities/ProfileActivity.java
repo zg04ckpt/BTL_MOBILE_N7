@@ -1,4 +1,4 @@
-package com.n7.quizbattle.activities;
+package com.n7.quizbattle.users.activities;
 
 import android.os.Bundle;
 import android.view.View;
@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.n7.quizbattle.R;
-import com.n7.quizbattle.adapters.MatchHistoryAdapter;
-import com.n7.quizbattle.models.MatchHistory;
+import com.n7.quizbattle.battles.adapters.MatchHistoryAdapter;
+import com.n7.quizbattle.battles.models.MatchHistory;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Models.Quizzes.Enums;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Models.Quizzes.Requests
 {
@@ -17,9 +18,11 @@ namespace Models.Quizzes.Requests
         public IFormFile? Video { get; set; }
 
         [Required(ErrorMessage = "Question type is required")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public QuestionType Type { get; set; }
 
         [Required(ErrorMessage = "Question level is required")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public QuestionLevel Level { get; set; }
 
         [Required(ErrorMessage = "Topic ID is required")]
