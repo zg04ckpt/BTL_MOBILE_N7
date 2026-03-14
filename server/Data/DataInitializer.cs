@@ -4,6 +4,8 @@ using Core.Utilities;
 using Feature.Settings.Interfaces;
 using Feature.Users.Entities;
 using Microsoft.EntityFrameworkCore;
+using Models.Events.Entities;
+using Models.Events.Enums;
 using Models.Users.Enums;
 
 namespace Data
@@ -119,6 +121,37 @@ namespace Data
                         }
                     };
                     await userRepo.AddAsync(users);
+                }
+
+                var eventRewardRepo = _unitOfWork.Repository<EventReward>();
+                if (await eventRewardRepo.CountAsync() == 0)
+                {
+                    var defaultRewards = Enum.GetValues<EventRewardType>()
+                        .Select(type => new EventReward
+                        {
+                            Name = type switch
+                            {
+                                EventRewardType.RankProtectionCard => "Thẻ bảo vệ rank",
+                                EventRewardType.ExpScore => "Kinh nghiệm",
+                                EventRewardType.Gold => "Vàng",
+                                EventRewardType.MatchLoudspeaker => "Match Loudspeaker",
+                                _ => type.ToString()
+                            },
+                            Type = type,
+                            Desc = $"Default reward for {type}",
+                            Unit = type switch
+                            {
+                                EventRewardType.RankProtectionCard => "card",
+                                EventRewardType.ExpScore => "exp",
+                                EventRewardType.Gold => "gold",
+                                EventRewardType.MatchLoudspeaker => "item",
+                                _ => "unit"
+                            },
+                            ClaimedRewards = new()
+                        })
+                        .ToArray();
+
+                    await eventRewardRepo.AddAsync(defaultRewards);
                 }
 
                 // Initialize default system configurations

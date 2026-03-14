@@ -34,7 +34,7 @@ namespace Feature.Overview.Services
                 UserTrend = userTrend,
                 AccountStatusDistribution = statusDistribution,
                 RecentUsers = recentUsers,
-                GeneratedAt = DateTime.UtcNow
+                GeneratedAt = DateTime.UtcNow.ToLocalTime()
             };
         }
 
@@ -51,7 +51,7 @@ namespace Feature.Overview.Services
                     Name = u.Name,
                     Email = u.Email,
                     AvatarUrl = u.AvatarUrl,
-                    RegisteredAt = u.CreatedAt,
+                    RegisteredAt = u.CreatedAt.ToLocalTime(),
                     Status = u.Status.ToString(),
                     TotalMatches = 0 // TODO: Calculate from matches when Match feature is implemented
                 },
@@ -209,7 +209,7 @@ namespace Feature.Overview.Services
                     Name = u.Name,
                     Email = u.Email,
                     AvatarUrl = u.AvatarUrl,
-                    RegisteredAt = u.CreatedAt,
+                    RegisteredAt = u.CreatedAt.ToLocalTime(),
                     Status = u.Status.ToString(),
                     TotalMatches = 0 // TODO: Calculate from matches
                 },

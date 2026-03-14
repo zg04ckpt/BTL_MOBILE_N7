@@ -38,7 +38,7 @@ namespace Feature.Quizzes.Services
                     Level = entity.Level,
                     Status = entity.Status,
                     TopicName = entity.Topic.Name,
-                    CreatedAt = entity.CreatedAt
+                    CreatedAt = entity.CreatedAt.ToLocalTime()
                 });
 
             return entities;
@@ -63,7 +63,7 @@ namespace Feature.Quizzes.Services
                         Status = entity.Status,
                         TopicId = entity.TopicId,
                         TopicName = entity.Topic.Name,
-                        CreatedAt = entity.CreatedAt,
+                        CreatedAt = entity.CreatedAt.ToLocalTime(),
                     },
                     entity.AnswerJsonData,
                 })
@@ -115,7 +115,7 @@ namespace Feature.Quizzes.Services
                     Level = entity.Level,
                     Status = entity.Status,
                     TopicName = entity.Topic.Name,
-                    CreatedAt = entity.CreatedAt
+                    CreatedAt = entity.CreatedAt.ToLocalTime()
                 });
 
             return entities;

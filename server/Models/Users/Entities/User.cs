@@ -1,6 +1,7 @@
 ﻿using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Models.Events.Entities;
 using Models.Matchs.Entities;
 using Models.Users.Enums;
 
@@ -24,6 +25,8 @@ namespace Feature.Users.Entities
         public Role Role { get; set; }
 
         public List<UserMatchResultHistory> Histories { get; set; }
+        public List<UserInEvent> EventsProgress { get; set; }
+        public List<ClaimedReward> ClaimedRewards { get; set; }
     }
 
     public class UserConfig : IEntityTypeConfiguration<User>

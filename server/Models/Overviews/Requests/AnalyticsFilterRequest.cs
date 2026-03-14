@@ -22,7 +22,7 @@ namespace Models.Overviews.Requests
         {
             if (StartDate.HasValue && EndDate.HasValue)
             {
-                return (StartDate.Value, EndDate.Value);
+                return (StartDate.Value.ToUniversalTime(), EndDate.Value.ToUniversalTime());
             }
 
             if (LastDays.HasValue)

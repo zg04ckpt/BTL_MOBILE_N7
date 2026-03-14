@@ -54,6 +54,8 @@ namespace Feature.Matchs.Services
         public async Task<Paginated<MatchListItemDto>> GetAllMatchsPagingAsync(SearchMatchRequest request)
         {
             var filterBuilder = PredicateBuilder.New<Match>(true);
+            var fromUtc = request.From?.ToUniversalTime();
+            var toUtc = request.To?.ToUniversalTime();
             if (request.BattleType != null)
             {
                 filterBuilder.And(e => e.BattleType == request.BattleType);
@@ -62,13 +64,13 @@ namespace Feature.Matchs.Services
             {
                 filterBuilder.And(e => e.NumberOfPlayers == request.NumberOfPlayers);
             }
-            if (request.From != null)
+            if (fromUtc != null)
             {
-                filterBuilder.And(e => e.CreatedAt >= request.From);
+                filterBuilder.And(e => e.CreatedAt >= fromUtc);
             }
-            if (request.To != null)
+            if (toUtc != null)
             {
-                filterBuilder.And(e => e.CreatedAt <= request.To);
+                filterBuilder.And(e => e.CreatedAt <= toUtc);
             }
 
             return await _uow.Repository<Match>().GetPagingAsync(
@@ -80,8 +82,8 @@ namespace Feature.Matchs.Services
                 selector: e => new MatchListItemDto
                 {
                     Id = e.Id,
-                    From = e.CreatedAt,
-                    To = e.EndedAt,
+                    From = e.CreatedAt.ToLocalTime(),
+                    To = e.EndedAt.ToLocalTime(),
                     BattleStatus = e.Status,
                     BattleType = e.BattleType,
                     ContentType = e.ContentType,
@@ -100,8 +102,8 @@ namespace Feature.Matchs.Services
                     BattleType = e.BattleType,
                     ContentType = e.ContentType,
                     NumberOfPlayers = e.NumberOfPlayers,
-                    CreatedAt = e.CreatedAt,
-                    EndedAt = e.EndedAt,
+                    CreatedAt = e.CreatedAt.ToLocalTime(),
+                    EndedAt = e.EndedAt.ToLocalTime(),
                     MaxSecondPerQuestion = e.MaxSecondPerQuestion,
                     ScorePerCorrectAnswer = e.ScorePerCorrectAnswer,
                     Status = e.Status,
@@ -122,7 +124,7 @@ namespace Feature.Matchs.Services
                     {
                         Id = q.Question.Id,
                         Level = q.Question.Level,
-                        CreatedAt = q.Question.CreatedAt,
+                        CreatedAt = q.Question.CreatedAt.ToLocalTime(),
                         Status = q.Question.Status,
                         StringContent = q.Question.StringContent,
                         Type = q.Question.Type,

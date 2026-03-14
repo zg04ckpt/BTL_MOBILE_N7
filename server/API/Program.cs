@@ -4,6 +4,7 @@ using Core.Exceptions;
 using Core.Models;
 using Core.Utilities;
 using Data;
+using Feature.Events;
 using Feature.Matchs;
 using Feature.Overview;
 using Feature.Quizzes;
@@ -33,6 +34,7 @@ namespace API
             builder.Services.AddSettingsFeature();
             builder.Services.AddOverviewFeature();
             builder.Services.AddMatchFeature();
+            builder.Services.AddEventFeature();
             builder.Services.AddDBService();
             builder.Services.AddStorageServices();
             builder.Services.AddCNLib(builder.Configuration);

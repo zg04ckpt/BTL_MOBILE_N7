@@ -211,7 +211,7 @@ namespace Feature.Users.Services
                     Rank = entity.Rank,
                     RankScore = entity.RankScore,
                     Exp = entity.Exp,
-                    CreatedAt = entity.CreatedAt,
+                    CreatedAt = entity.CreatedAt.ToLocalTime(),
                     RoleId = entity.RoleId,
                     RoleName = entity.Role.Name
                 })

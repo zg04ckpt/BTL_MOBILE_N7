@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Data\Data.csproj" />
     <ProjectReference Include="..\Feature.Matchs\Feature.Matchs.csproj" />
+    <ProjectReference Include="..\Feature.Events\Feature.Events.csproj" />
     <ProjectReference Include="..\Feature.Users\Feature.Users.csproj" />
     <ProjectReference Include="..\Feature.Quizzes\Feature.Quizzes.csproj" />
     <ProjectReference Include="..\Feature.Settings\Feature.Settings.csproj" />

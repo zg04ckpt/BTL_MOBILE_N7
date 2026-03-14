@@ -35,7 +35,7 @@ namespace Feature.Settings.Services
                 BaseLosePoints = GetIntValue(configDict, ConfigurationKey.BaseLosePoints.ToString(), 10),
                 EloKFactor = GetDoubleValue(configDict, ConfigurationKey.EloKFactor.ToString(), 32.0),
                 
-                LastUpdated = configs.Any() ? configs.Max(c => c.UpdatedAt) : DateTime.UtcNow
+                LastUpdated = configs.Any() ? configs.Max(c => c.UpdatedAt).ToLocalTime() : DateTime.UtcNow.ToLocalTime()
             };
         }
 
@@ -107,7 +107,7 @@ namespace Feature.Settings.Services
                 Key = config.Key,
                 Value = config.Value,
                 Description = config.Description,
-                UpdatedAt = config.UpdatedAt
+                UpdatedAt = config.UpdatedAt.ToLocalTime()
             };
         }
 
