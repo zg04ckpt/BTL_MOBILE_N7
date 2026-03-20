@@ -50,7 +50,7 @@ import { HomeOutlined } from '@ant-design/icons-vue'
   height: 40px;
   align-items: center;
   padding: 10px;
-  border-bottom: 2px solid #021df3;
+  border-bottom: 1px solid #021df3;
   color: black;
   text-decoration: none;
 }
@@ -71,6 +71,6 @@ aside {
   bottom: 0;
   left: 0;
   width: 250px;
-  border-right: 2px solid #021df3;
+  border-right: 1px solid #021df3;
 }
 </style>
