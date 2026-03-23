@@ -36,7 +36,7 @@ import { login } from '@/api';
 import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import { reactive, ref } from 'vue';
-import { useLoginSessionStore } from '@/stores/counter';
+import { useLoginSessionStore } from '@/stores/loginSesssion';
 
 const loginInfoStore = useLoginSessionStore();
 const router = useRouter();

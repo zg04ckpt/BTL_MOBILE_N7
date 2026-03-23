@@ -2,7 +2,7 @@
 import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { getLoginInfo } from './api';
-import { useLoginSessionStore } from './stores/counter';
+import { useLoginSessionStore } from './stores/loginSesssion';
 import { message } from 'ant-design-vue';
 
 const session = useLoginSessionStore();

@@ -22,7 +22,7 @@
 <script setup lang="ts">
     import { logout } from '@/api';
 import router from '@/router';
-import { useLoginSessionStore } from '@/stores/counter';
+import { useLoginSessionStore } from '@/stores/loginSesssion';
     import { BellOutlined } from '@ant-design/icons-vue';
     import { message, Modal } from 'ant-design-vue';
 

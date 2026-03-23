@@ -28,5 +28,10 @@ export const endpoints = {
         update: (id: number) => `/api/questions/${id}`,
         import: "/api/questions/import-excel",
         bulkDelete: "/api/questions/bulk-delete",
+    },
+    events: {
+        getAll: "/api/events",
+        update: (id: number) => `/api/events/${id}`,
+        rewardMapping: "/api/events/rewards/mappings"
     }
 }
