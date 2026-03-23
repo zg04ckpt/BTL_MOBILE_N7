@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CNLib\CNLib.csproj" />
     <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Feature.Settings\Feature.Settings.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />
   </ItemGroup>
 

@@ -78,7 +78,7 @@ namespace Feature.Quizzes.Services
 
         public async Task<Paginated<QuestionListItemDto>> GetPagingAsync(SearchQuestionRequest request)
         {
-            var filter = PredicateBuilder.New<Question>();
+            var filter = PredicateBuilder.New<Question>(true);
             if (!string.IsNullOrEmpty(request.StringContent))
             {
                 filter = filter.And(e => e.StringContent.Contains(request.StringContent));

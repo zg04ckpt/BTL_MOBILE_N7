@@ -33,5 +33,9 @@ export const endpoints = {
         getAll: "/api/events",
         update: (id: number) => `/api/events/${id}`,
         rewardMapping: "/api/events/rewards/mappings"
+    },
+    settings: {
+        getAll: "/api/settings",
+        update: "/api/settings"
     }
 }

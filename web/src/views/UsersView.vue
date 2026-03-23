@@ -229,6 +229,7 @@ const paginationConfig = reactive({
 const resetFilter = () => {
   searchParams.email = '';
   searchParams.name = '';
+  paginationConfig.current = 1;
   search();
 }
 
@@ -459,7 +460,7 @@ const search = async () => {
     users.value = apiRes.data!.items;
     paginationConfig.current = apiRes.data!.pageIndex;
     paginationConfig.pageSize = apiRes.data!.pageSize;
-    paginationConfig.total = apiRes.data!.totalPages;
+    paginationConfig.total = apiRes.data!.totalItems;
   }
 };
 

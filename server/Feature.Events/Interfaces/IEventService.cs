@@ -7,7 +7,7 @@ namespace Feature.Events.Interfaces
     public interface IEventService
     {
         Task<List<object>> GetAllSystemEventsAsync();
-        Task<Dictionary<int, EventRewardInfoDto>> GetEventRewardMappingsAsync();
+        Task<List<EventRewardInfoDto>> GetEventRewardMappingsAsync();
         Task<ChangedResponse> CreateEventAsync(CreateEventRequest request);
         Task<ChangedResponse> UpdateEventAsync(int eventId, UpdateEventRequest request);
         Task<ChangedResponse> DeleteEventAsync(int eventId);

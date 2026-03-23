@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { HomeOutlined } from '@ant-design/icons-vue'
+import { HomeOutlined, UserOutlined, QuestionOutlined, 
+  SettingOutlined, StarOutlined, CrownOutlined, DingtalkOutlined
+ } from '@ant-design/icons-vue'
 </script>
 
 <template>
@@ -11,32 +13,32 @@ import { HomeOutlined } from '@ant-design/icons-vue'
       </router-link>
 
       <router-link to="/users" class="item active">
-        <HomeOutlined />
+        <UserOutlined />
         <div class="ms-2">Quản lý người dùng</div>
       </router-link>
 
       <router-link to="/questions" class="item">
-        <HomeOutlined />
+        <QuestionOutlined />
         <div class="ms-2">Quản lý câu hỏi</div>
       </router-link>
 
       <router-link to="/settings" class="item">
-        <HomeOutlined />
+        <SettingOutlined />
         <div class="ms-2">Quản lý cấu hình</div>
       </router-link>
 
       <router-link to="topics" class="item">
-        <HomeOutlined />
+        <StarOutlined />
         <div class="ms-2">Quản lý chủ đề</div>
       </router-link>
 
       <router-link to="events" class="item">
-        <HomeOutlined />
+        <CrownOutlined />
         <div class="ms-2">Quản lý sự kiện</div>
       </router-link>
 
       <router-link to="matches" class="item">
-        <HomeOutlined />
+        <DingtalkOutlined />
         <div class="ms-2">Quản lý trận đấu</div>
       </router-link>
     </div>

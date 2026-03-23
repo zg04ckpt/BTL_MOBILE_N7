@@ -3,6 +3,7 @@ using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Feature.Matchs.Interfaces;
+using Feature.Settings.Interfaces;
 using LinqKit;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Matchs.DTOs;
@@ -22,6 +23,7 @@ namespace Feature.Matchs.Services
     {
         private readonly ILogService<MatchService> _logger;
         private readonly IMatchRealtimeService _matchRealtimeService;
+        private readonly ISettingsService _settingsService;
         private readonly IUnitOfWork _uow;
         private readonly IServiceScopeFactory _scopeFactory;
         private static readonly ConcurrentDictionary<string, MatchRoomMappingDto> _matchs = new();
@@ -30,11 +32,13 @@ namespace Feature.Matchs.Services
             ILogService<MatchService> logger,
             IUnitOfWork uow,
             IMatchRealtimeService matchRealtimeService,
+            ISettingsService settingsService,
             IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _uow = uow;
             _matchRealtimeService = matchRealtimeService;
+            _settingsService = settingsService;
             _scopeFactory = scopeFactory;
         }
 
@@ -136,12 +140,16 @@ namespace Feature.Matchs.Services
 
         public async Task StartMatchAsync(LobbyRoomDto roomInfo, List<PlayerInLobbyInfoDto> players)
         {
-            var questions = await MakeQuestionSetForQuizBattleMatch(roomInfo.ContentType, roomInfo.TopicId);
+            var settings = await GetRuntimeSettingsAsync();
+            var questions = await MakeQuestionSetForQuizBattleMatch(
+                roomInfo.ContentType,
+                roomInfo.TopicId,
+                settings.QuestionsPerMatch);
 
             // Create new match info
             var match = new Match
             {
-                MaxSecondPerQuestion = 15,
+                MaxSecondPerQuestion = settings.QuestionTimeLimit,
                 CreatedAt = DateTime.UtcNow,
                 BattleType = roomInfo.MaxPlayers == 1 ? BattleType.Single : BattleType.Team,
                 NumberOfPlayers = roomInfo.MaxPlayers,
@@ -302,20 +310,14 @@ namespace Feature.Matchs.Services
 
             // Score formulas:
             // ExpGained      : base 50 XP + 10 per correct answer
-            // RankScoreGained: 1st +30, 2nd +20, 3rd +10, rest +5; score=0 → -10
+            // RankScoreGained: winner +BaseWinPoints, others -BaseLosePoints
+            var settings = await GetRuntimeSettingsAsync();
             int rank = 1;
             foreach (var userMapping in ranked)
             {
                 int correctAnswers = userMapping.Score / (room.ScorePerQuestions > 0 ? room.ScorePerQuestions : 1);
                 int expGained = 50 + correctAnswers * 10;
-                int rankScoreGained = rank switch
-                {
-                    1 => 30,
-                    2 => 20,
-                    3 => 10,
-                    _ => 5
-                };
-                if (userMapping.Score == 0) rankScoreGained = -10;
+                int rankScoreGained = rank == 1 ? settings.BaseWinPoints : -settings.BaseLosePoints;
 
                 _logger.LogInfo(
                     $"FinalizeMatchAsync [{trackingId}] User {userMapping.UserId}: " +
@@ -422,16 +424,19 @@ namespace Feature.Matchs.Services
         /// Mix     : hỗn hợp nhiều topic, phân tỉ lệ level
         /// OnlyOne : lấy đúng topic chỉ định, phân tỉ lệ level
         /// </summary>
-        private async Task<List<Question>> MakeQuestionSetForQuizBattleMatch(MatchContentType contentType, int? topicId)
+        private async Task<List<Question>> MakeQuestionSetForQuizBattleMatch(
+            MatchContentType contentType,
+            int? topicId,
+            int totalQuestions)
         {
             var questionPool = await _uow.Repository<Question>().GetAllAsync(
                 predicate: e => true,
                 includes: e => e.Topic);
 
-            const int TotalQuestions = 2;
-            const int NormalCount   = 5;   // 50%
-            const int MediumCount   = 3;   // 30%
-            const int HardCount     = 2;   // 20%
+            var safeTotalQuestions = Math.Max(1, totalQuestions);
+            var normalCount = (int)Math.Ceiling(safeTotalQuestions * 0.5);
+            var mediumCount = (int)Math.Round(safeTotalQuestions * 0.3);
+            var hardCount = safeTotalQuestions - normalCount - mediumCount;
 
             var rng = new Random();
 
@@ -443,7 +448,7 @@ namespace Feature.Matchs.Services
 
             // Random: hoàn toàn ngẫu nhiên, không phân biệt topic hay level
             if (contentType == MatchContentType.Random)
-                return Pick(questionPool, TotalQuestions);
+                return Pick(questionPool, safeTotalQuestions);
 
             // Mix: hỗn hợp tất cả topic; OnlyOne: lọc đúng topic
             var filtered = contentType == MatchContentType.Mix
@@ -458,19 +463,37 @@ namespace Feature.Matchs.Services
                 => byLevel.TryGetValue(level, out var g) ? g : Enumerable.Empty<Question>();
 
             var selected = new List<Question>();
-            selected.AddRange(Pick(PoolOf(QuestionLevel.Normal), NormalCount));
-            selected.AddRange(Pick(PoolOf(QuestionLevel.Medium), MediumCount));
-            selected.AddRange(Pick(PoolOf(QuestionLevel.Hard),   HardCount));
+            selected.AddRange(Pick(PoolOf(QuestionLevel.Normal), normalCount));
+            selected.AddRange(Pick(PoolOf(QuestionLevel.Medium), mediumCount));
+            selected.AddRange(Pick(PoolOf(QuestionLevel.Hard), hardCount));
 
             // Bù câu còn thiếu bằng câu bất kỳ chưa được chọn
-            if (selected.Count < TotalQuestions)
+            if (selected.Count < safeTotalQuestions)
             {
                 var fallback = filtered.Where(q => !selected.Contains(q));
-                selected.AddRange(Pick(fallback, TotalQuestions - selected.Count));
+                selected.AddRange(Pick(fallback, safeTotalQuestions - selected.Count));
             }
 
             // Shuffle kết quả cuối
             return selected.OrderBy(_ => rng.Next()).ToList();
+        }
+
+        private async Task<(int QuestionTimeLimit, int QuestionsPerMatch, int BaseWinPoints, int BaseLosePoints)> GetRuntimeSettingsAsync()
+        {
+            try
+            {
+                var settings = await _settingsService.GetAllSettingsAsync();
+                return (
+                    Math.Max(1, settings.QuestionTimeLimit),
+                    Math.Max(1, settings.QuestionsPerMatch),
+                    settings.BaseWinPoints,
+                    settings.BaseLosePoints);
+            }
+            catch (Exception ex)
+            {
+                await _logger.LogError($"GetRuntimeSettingsAsync: fallback to default settings because of error: {ex.Message}");
+                return (15, 10, 20, 15);
+            }
         }
     }
 }

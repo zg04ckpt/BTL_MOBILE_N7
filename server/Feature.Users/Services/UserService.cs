@@ -112,7 +112,7 @@ namespace Feature.Users.Services
             var filter = PredicateBuilder.New<User>(true);
             if (request.Name != null)
             {
-                filter = filter.And(e => e.Name.Contains(request.Name));
+                filter = filter.And(e => e.Name.ToLower().Contains(request.Name.ToLower()));
             }
             if (request.Phone != null)
             {
@@ -141,6 +141,8 @@ namespace Feature.Users.Services
 
             return entities;
         }
+
+        
 
         private async Task ConfirmValidCreateDataAsync(CreateUserRequest request)
         {
@@ -192,6 +194,14 @@ namespace Feature.Users.Services
                 && await userRepository.ExistsAsync(u => u.Id != entity.Id && u.PhoneNumber == request.PhoneNumber))
             {
                 throw new BadRequestException("Phone number is already in use");
+            }
+
+            var role = await _uow.Repository<Role>().GetFirstAsync(
+                predicate: r => r.Id == request.RoleId)
+                ?? throw new BadRequestException("Role not found");
+            if (role.Name == RoleName.SuperAdmin.ToString())
+            {
+                throw new ForbiddenException("Cannot change role of SuperAdmin");
             }
         }
 
@@ -246,7 +256,15 @@ namespace Feature.Users.Services
 
         public async Task<ChangedResponse> UpdateAsync(int id, UpdateUserRequest request)
         {
-            var user = await GetEntityAsync<User>(id);
+            var user = await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == id,
+                includes: e => e.Role)
+                ?? throw new Exception("User not found");
+
+            if (user.Role.Name == nameof(RoleName.SuperAdmin))
+            {
+                throw new ForbiddenException("Cannot update SuperAdmin"); 
+            }
 
             await ConfirmValidUpdateDataAsync(user, request);
 
@@ -278,7 +296,15 @@ namespace Feature.Users.Services
 
         public async Task<ChangedResponse> DeleteAsync(int id)
         {
-            var user = await GetEntityAsync<User>(id);
+            var user = await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == id,
+                includes: e => e.Role)
+                ?? throw new Exception("User not found");
+
+            if (user.Role.Name == nameof(RoleName.SuperAdmin))
+            {
+                throw new ForbiddenException("Cannot delete SuperAdmin");
+            }
 
             await _uow.Repository<User>().DeleteAsync(user);
             await _uow.SaveChangesAsync();

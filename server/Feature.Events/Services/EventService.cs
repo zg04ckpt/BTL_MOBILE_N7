@@ -90,23 +90,20 @@ namespace Feature.Events.Services
             return data;
         }
 
-        public async Task<Dictionary<int, EventRewardInfoDto>> GetEventRewardMappingsAsync()
+        public async Task<List<EventRewardInfoDto>> GetEventRewardMappingsAsync()
         {
             var rewards = await _uow.Repository<EventReward>().GetAllAsync(
                 predicate: e => true,
-                selector: e => new
+                selector: e => new EventRewardInfoDto
                 {
-                    e.Id,
-                    Data = new EventRewardInfoDto
-                    {
-                        Name = e.Name,
-                        Type = e.Type,
-                        Desc = e.Desc,
-                        Unit = e.Unit
-                    }
+                    Id = e.Id,
+                    Name = e.Name,
+                    Type = e.Type,
+                    Desc = e.Desc,
+                    Unit = e.Unit
                 });
 
-            return rewards.ToDictionary(x => x.Id, x => x.Data);
+            return rewards.ToList();
         }
 
         public async Task<List<object>> GetUserInEventProgressesAsync(int userId)
