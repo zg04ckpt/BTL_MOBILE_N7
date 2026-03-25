@@ -25,7 +25,7 @@ namespace API.Controllers
         [HttpGet("start-options")]
         public async Task<IActionResult> GetStartOptions()
         {
-            return Ok(await _lobbyService.GetOptionsAsync());
+            return Ok(ApiResponse.Success(await _lobbyService.GetOptionsAsync()));
         }
 
         [HttpGet("paging")]
