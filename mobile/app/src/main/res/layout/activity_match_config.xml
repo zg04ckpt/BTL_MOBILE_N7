@@ -55,54 +55,11 @@
             android:layout_marginBottom="10dp" />
 
         <LinearLayout
+            android:id="@+id/ll_battle_types"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="6dp">
-
-            <!-- Đấu đơn vượt ải -->
-            <LinearLayout
-                android:id="@+id/cardDauDon"
-                android:layout_width="0dp"
-                android:layout_height="90dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="15dp"
-                android:background="@drawable/bg_option_card"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:elevation="4dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Đấu đơn\nvượt ải"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/color1"
-                    android:gravity="center" />
-            </LinearLayout>
-
-            <!-- Đấu đội (selected) -->
-            <LinearLayout
-                android:id="@+id/cardDauDoi"
-                android:layout_width="0dp"
-                android:layout_height="90dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_option_card_selected"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:elevation="4dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Đấu đội"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF"
-                    android:gravity="center" />
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:layout_width="match_parent"
@@ -132,76 +89,11 @@
             android:fillViewport="false">
 
             <LinearLayout
+                android:id="@+id/ll_number_of_players"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingEnd="4dp">
-
-                <LinearLayout
-                    android:id="@+id/card1Nguoi"
-                    android:layout_width="90dp"
-                    android:layout_height="60dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/bg_option_card"
-                    android:gravity="center"
-                    android:elevation="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="1 Người"
-                        android:textSize="14sp"
-                        android:textColor="@color/color11" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/card2Nguoi"
-                    android:layout_width="90dp"
-                    android:layout_height="60dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/bg_option_card_selected"
-                    android:gravity="center"
-                    android:elevation="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="2 Người"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/color2" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/card5Nguoi"
-                    android:layout_width="90dp"
-                    android:layout_height="60dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/bg_option_card"
-                    android:gravity="center"
-                    android:elevation="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="5 Người"
-                        android:textSize="14sp"
-                        android:textColor="@color/color11" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/card10Nguoi"
-                    android:layout_width="90dp"
-                    android:layout_height="60dp"
-                    android:background="@drawable/bg_option_card"
-                    android:gravity="center"
-                    android:elevation="4dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="10 Người"
-                        android:textSize="14sp"
-                        android:textColor="@color/color11" />
-                </LinearLayout>
-
-            </LinearLayout>
+                android:paddingEnd="4dp" />
         </HorizontalScrollView>
 
         <!-- Chủ đề thi đấu section -->
@@ -214,108 +106,13 @@
             android:textColor="@color/color1"
             android:layout_marginBottom="10dp" />
 
-
-        <LinearLayout
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/fl_topic_options"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
-
-            <LinearLayout
-                android:id="@+id/cardHonHop"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_option_card"
-                android:gravity="center"
-                android:elevation="4dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Hỗn hợp"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/color1"
-                    android:gravity="center" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/cardNgauNhien"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_option_card"
-                android:gravity="center"
-                android:elevation="4dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ngẫu nhiên"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/color1"
-                    android:gravity="center" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/cardToanLop1"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_option_card_selected"
-                android:gravity="center"
-                android:elevation="4dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Toán lớp 1"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/color2"
-                    android:gravity="center" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Row 2: Toán lớp 2 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="24dp">
-
-            <LinearLayout
-                android:id="@+id/cardToanLop2"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_option_card"
-                android:gravity="center"
-                android:elevation="4dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Toán lớp 2"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/color1"
-                    android:gravity="center" />
-            </LinearLayout>
-
-            <!-- Empty placeholders to keep grid alignment -->
-            <View
-                android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:layout_weight="1" />
-        </LinearLayout>
+            app:flexWrap="wrap"
+            app:justifyContent="flex_start"
+            android:layout_marginBottom="24dp"/>
 
         <!-- Confirm button -->
         <com.google.android.material.button.MaterialButton
