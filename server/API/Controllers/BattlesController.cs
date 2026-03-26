@@ -72,10 +72,10 @@ namespace API.Controllers
         public async Task<IActionResult> JoinLobby([FromBody] JoinLobbyRequest request)
         {
             var userId = StringUtil.GetUserIdFromClaim(User);
-            return Ok(new
+            return Ok(ApiResponse.Success(new
             {
                 LobbyRoomId = await _lobbyService.JoinMatchLobbyAsync(userId, request)
-            });
+            }));
         }
 
         [HttpPost("lobbies/out")]
@@ -83,10 +83,10 @@ namespace API.Controllers
         public async Task<IActionResult> OutLobby([FromBody] OutLobbyRequest request)
         {
             var userId = StringUtil.GetUserIdFromClaim(User);
-            return Ok(new
+            return Ok(ApiResponse.Success(new
             {
                 LobbyRoomId = await _lobbyService.OutLobbyRoomAsync(userId, request)
-            });
+            }));
         }
     }
 }

@@ -66,7 +66,7 @@ namespace API.Controllers
                 Secure = true,
                 SameSite = SameSiteMode.None
             });
-            return Ok();
+            return Ok(ApiResponse.Success());
         }
 
         [HttpPost("register")]
