@@ -28,6 +28,9 @@
             android:name=".battles.activities.MatchResultActivity"
             android:exported="false" />
         <activity
+            android:name=".home_rank.activities.RankingActivity"
+            android:exported="false" />
+        <activity
             android:name=".lobby.activities.MatchMakingActivity"
             android:exported="true" />
         <activity
@@ -35,7 +38,13 @@
             android:exported="true" />
         <activity
             android:name=".home_rank.activities.HomeActivity"
-            android:exported="true" />
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".users.activities.RegisterActivity"
             android:exported="true" />
