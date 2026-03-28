@@ -4,7 +4,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.n7.quizbattle.BuildConfig;
 import com.n7.quizbattle.shared.models.ApiResponse;
 
 import retrofit2.Call;
@@ -19,13 +18,8 @@ public abstract class BaseApi {
 
     protected static synchronized Retrofit getRetrofit() {
         if (retrofit == null) {
-            String baseUrl = BuildConfig.API_BASE_URL;
-            if (!baseUrl.endsWith("/")) {
-                baseUrl += "/";
-            }
-
             retrofit = new Retrofit.Builder()
-                    .baseUrl(baseUrl)
+                    .baseUrl("https://quizbattle.hoangcn.com/api/")
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
         }
