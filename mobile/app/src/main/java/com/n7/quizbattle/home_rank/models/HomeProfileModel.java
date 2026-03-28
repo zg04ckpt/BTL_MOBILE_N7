@@ -1,6 +1,10 @@
 package com.n7.quizbattle.home_rank.models;
 
-public class HomeProfileModel {
+import java.io.Serializable;
+
+public class HomeProfileModel implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final int id;
     private final String name;
     private final String avatarUrl;

@@ -101,20 +101,20 @@
             android:layout_width="90dp"
             android:layout_height="match_parent"
             android:text="Friend"
-            android:textColor="@color/color2"
+            android:textColor="@color/color11"
             android:textSize="13sp"
             android:gravity="center"
-            android:background="@drawable/bg_tab_selected" />
+            android:background="@android:color/transparent" />
 
         <TextView
             android:id="@+id/tabGlobal"
             android:layout_width="90dp"
             android:layout_height="match_parent"
             android:text="Global"
-            android:textColor="@color/color11"
+            android:textColor="@color/color2"
             android:textSize="13sp"
             android:gravity="center"
-            android:background="@android:color/transparent" />
+            android:background="@drawable/bg_tab_selected" />
     </LinearLayout>
 
     <!-- Top 3 Podium -->

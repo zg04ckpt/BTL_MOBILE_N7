@@ -24,9 +24,15 @@ import com.n7.quizbattle.lobby.activities.MatchConfigActivity;
 import com.n7.quizbattle.users.activities.ProfileActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.lang.reflect.Method;
+import java.util.Locale;
+
 public class HomeActivity extends AppCompatActivity {
+    public static final String EXTRA_HOME_USER = "extra_home_user";
+
     private HomeRankRepository repository;
     private SessionManager sessionManager;
+    private HomeProfileModel currentUser;
 
     private TextView tvUsername;
     private TextView tvLevel;
@@ -52,7 +58,119 @@ public class HomeActivity extends AppCompatActivity {
         initViews();
         setupClickHandlers();
         setupBottomNavigation();
-        loadHomeData();
+
+        currentUser = readUserFromIntent();
+        if (currentUser == null) {
+            // Test-branch fallback only: ensure activity still has a valid user context.
+            currentUser = createDefaultUserForTest();
+        }
+
+        sessionManager.saveUserId(currentUser.getId());
+        bindHomeProfile(currentUser);
+        refreshHomeDataFromApi();
+    }
+
+    private HomeProfileModel createDefaultUserForTest() {
+        return new HomeProfileModel(
+                2,
+                "Admin2",
+                "",
+                1,
+                0,
+                0,
+                0,
+                0,
+                0f,
+                0
+        );
+    }
+
+    private HomeProfileModel readUserFromIntent() {
+        Intent intent = getIntent();
+        if (intent == null) {
+            return null;
+        }
+
+        Object rawUser = intent.getSerializableExtra(EXTRA_HOME_USER);
+        if (rawUser instanceof HomeProfileModel) {
+            return (HomeProfileModel) rawUser;
+        }
+
+        if (rawUser != null) {
+            return mapFromGenericUser(rawUser);
+        }
+
+        return null;
+    }
+
+    private HomeProfileModel mapFromGenericUser(Object rawUser) {
+        try {
+            int id = invokeInt(rawUser, "getId", -1);
+            if (id <= 0) {
+                return null;
+            }
+
+            String name = invokeString(rawUser, "getName", "guest");
+            String avatarUrl = invokeString(rawUser, "getAvatarUrl", "");
+            int level = invokeInt(rawUser, "getLevel", 1);
+            int exp = invokeInt(rawUser, "getExp", 0);
+            int rank = invokeInt(rawUser, "getRank", 0);
+            int rankScore = invokeInt(rawUser, "getRankScore", 0);
+            int numberOfMatchs = invokeInt(rawUser, "getNumberOfMatchs", 0);
+            float winningRate = invokeFloat(rawUser, "getWinningRate", 0f);
+            int winningStreak = invokeInt(rawUser, "getWinningStreak", 0);
+
+            return new HomeProfileModel(
+                    id,
+                    name,
+                    avatarUrl,
+                    level,
+                    exp,
+                    rank,
+                    rankScore,
+                    numberOfMatchs,
+                    winningRate,
+                    winningStreak
+            );
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private int invokeInt(Object target, String methodName, int defaultValue) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object value = method.invoke(target);
+            if (value instanceof Number) {
+                return ((Number) value).intValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
+    }
+
+    private float invokeFloat(Object target, String methodName, float defaultValue) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object value = method.invoke(target);
+            if (value instanceof Number) {
+                return ((Number) value).floatValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
+    }
+
+    private String invokeString(Object target, String methodName, String defaultValue) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object value = method.invoke(target);
+            if (value instanceof String) {
+                return (String) value;
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
     }
 
     private void initViews() {
@@ -81,31 +199,47 @@ public class HomeActivity extends AppCompatActivity {
                 return true;
             }
             if (itemId == R.id.nav_rank) {
-                startActivity(new Intent(this, RankingActivity.class));
+                startActivityWithCurrentUser(RankingActivity.class);
                 return true;
             }
             if (itemId == R.id.nav_battle) {
-                startActivity(new Intent(this, MatchConfigActivity.class));
+                startActivityWithCurrentUser(MatchConfigActivity.class);
                 return true;
             }
             if (itemId == R.id.nav_profile) {
-                startActivity(new Intent(this, ProfileActivity.class));
+                startActivityWithCurrentUser(ProfileActivity.class);
                 return true;
             }
             return false;
         });
     }
 
-    private void loadHomeData() {
+    private void startActivityWithCurrentUser(Class<?> targetActivity) {
+        Intent intent = new Intent(this, targetActivity);
+        if (currentUser != null) {
+            intent.putExtra(EXTRA_HOME_USER, currentUser);
+        }
+        startActivity(intent);
+    }
+
+    private void refreshHomeDataFromApi() {
         String token = sessionManager.getAccessToken();
-        if (token == null || token.isEmpty()) {
-            applyGuestData();
+        if (token != null && !token.isEmpty()) {
+            loadHomeDataByProfileApi(token);
             return;
         }
 
+        loadHomeStatsByRankApi();
+    }
+
+    private void loadHomeDataByProfileApi(String token) {
         repository.getHomeProfile(token, new RepositoryCallback<>() {
             @Override
             public void onSuccess(HomeProfileModel data) {
+                if (data == null) {
+                    return;
+                }
+                currentUser = data;
                 bindHomeProfile(data);
                 sessionManager.saveUserId(data.getId());
             }
@@ -113,7 +247,29 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 Toast.makeText(HomeActivity.this, message, Toast.LENGTH_SHORT).show();
-                applyGuestData();
+                loadHomeStatsByRankApi();
+            }
+        });
+    }
+
+    private void loadHomeStatsByRankApi() {
+        if (currentUser == null || currentUser.getId() <= 0) {
+            applyGuestData();
+            return;
+        }
+
+        repository.getRankDetail(currentUser.getId(), new RepositoryCallback<>() {
+            @Override
+            public void onSuccess(com.n7.quizbattle.home_rank.models.RankDetailModel data) {
+                if (data == null) {
+                    return;
+                }
+                bindHomeStatsFromRankDetail(data);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(HomeActivity.this, message, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -142,10 +298,48 @@ public class HomeActivity extends AppCompatActivity {
         pbExp.setProgress(progress);
         tvPercentExp.setText(progress + "%");
 
-        setStatItem(findViewById(R.id.include_item_score), R.drawable.ic_home_rank_point, "Diem xep hang", String.valueOf(profile.getRankScore()));
-        setStatItem(findViewById(R.id.include_item_rank), R.drawable.ic_home_rank, "Thu hang", "#" + profile.getRank());
-        setStatItem(findViewById(R.id.include_item_matches), R.drawable.ic_home_number_match, "So tran", String.valueOf(profile.getNumberOfMatchs()));
-        setStatItem(findViewById(R.id.include_item_win_rate), R.drawable.ic_home_win_rate, "Ty le thang", String.format("%.1f%%", profile.getWinningRate()));
+        bindHomeStats(profile);
+    }
+
+    private void bindHomeStats(HomeProfileModel profile) {
+        int rankScore = Math.max(0, profile.getRankScore());
+        int rank = profile.getRank();
+        int numberOfMatches = Math.max(0, profile.getNumberOfMatchs());
+
+        float winRate = profile.getWinningRate();
+        // Some services return ratio (0..1), others return percent (0..100).
+        if (winRate > 0f && winRate <= 1f) {
+            winRate = winRate * 100f;
+        }
+        winRate = Math.max(0f, Math.min(100f, winRate));
+
+        String rankText = rank > 0 ? ("#" + rank) : "#-";
+        String winRateText = String.format(Locale.US, "%.1f%%", winRate);
+
+        setStatItem(findViewById(R.id.include_item_score), R.drawable.ic_home_rank_point, "Diem xep hang", String.valueOf(rankScore));
+        setStatItem(findViewById(R.id.include_item_rank), R.drawable.ic_home_rank, "Thu hang", rankText);
+        setStatItem(findViewById(R.id.include_item_matches), R.drawable.ic_home_number_match, "So tran", String.valueOf(numberOfMatches));
+        setStatItem(findViewById(R.id.include_item_win_rate), R.drawable.ic_home_win_rate, "Ty le thang", winRateText);
+    }
+
+    private void bindHomeStatsFromRankDetail(com.n7.quizbattle.home_rank.models.RankDetailModel detail) {
+        int rankScore = Math.max(0, detail.getRankScore());
+        int rank = detail.getRank();
+        int numberOfMatches = Math.max(0, detail.getNumberOfMatchs());
+
+        float winRate = detail.getWinningRate();
+        if (winRate > 0f && winRate <= 1f) {
+            winRate = winRate * 100f;
+        }
+        winRate = Math.max(0f, Math.min(100f, winRate));
+
+        String rankText = rank > 0 ? ("#" + rank) : "#-";
+        String winRateText = String.format(Locale.US, "%.1f%%", winRate);
+
+        setStatItem(findViewById(R.id.include_item_score), R.drawable.ic_home_rank_point, "Diem xep hang", String.valueOf(rankScore));
+        setStatItem(findViewById(R.id.include_item_rank), R.drawable.ic_home_rank, "Thu hang", rankText);
+        setStatItem(findViewById(R.id.include_item_matches), R.drawable.ic_home_number_match, "So tran", String.valueOf(numberOfMatches));
+        setStatItem(findViewById(R.id.include_item_win_rate), R.drawable.ic_home_win_rate, "Ty le thang", winRateText);
     }
 
     private void onNotificationClick() {
@@ -153,11 +347,11 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void onStartGameClick() {
-        startActivity(new Intent(this, MatchConfigActivity.class));
+        startActivityWithCurrentUser(MatchConfigActivity.class);
     }
 
     private void onEventBannerClick() {
-        startActivity(new Intent(this, EventActivity.class));
+        startActivityWithCurrentUser(EventActivity.class);
     }
 
     public void setStatItem(View includeView, int iconRes, String label, String value) {

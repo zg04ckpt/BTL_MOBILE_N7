@@ -19,16 +19,19 @@ import com.n7.quizbattle.home_rank.adapters.RankingAdapter;
 import com.n7.quizbattle.home_rank.models.HomeProfileModel;
 import com.n7.quizbattle.home_rank.models.RankBoardItemModel;
 import com.n7.quizbattle.home_rank.models.RankDetailModel;
+import com.n7.quizbattle.home_rank.models.RankTypeModel;
 import com.n7.quizbattle.home_rank.repositories.HomeRankRepository;
 import com.n7.quizbattle.home_rank.repositories.RepositoryCallback;
 import com.n7.quizbattle.home_rank.repositories.SessionManager;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RankingActivity extends AppCompatActivity {
     private HomeRankRepository repository;
     private SessionManager sessionManager;
+    private HomeProfileModel currentUser;
 
     private TextView tabWeekly;
     private TextView tabMonthly;
@@ -49,6 +52,9 @@ public class RankingActivity extends AppCompatActivity {
 
     private RankingAdapter adapter;
     private String selectedApiType = "Monthly";
+    private String weeklyApiType = "Monthly";
+    private String monthlyApiType = "Yearly";
+    private String totalApiType = "Total";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,12 +69,104 @@ public class RankingActivity extends AppCompatActivity {
 
         repository = new HomeRankRepository();
         sessionManager = new SessionManager(this);
+        currentUser = readUserFromIntent();
+        if (currentUser != null && currentUser.getId() > 0) {
+            sessionManager.saveUserId(currentUser.getId());
+        }
 
         initViews();
         setupRecyclerView();
         setupControlHandlers();
-        loadRankingBoard();
+        loadRankingTypesAndBoard();
         loadCurrentUserRank();
+    }
+
+    private HomeProfileModel readUserFromIntent() {
+        Intent intent = getIntent();
+        if (intent == null) {
+            return null;
+        }
+
+        Object rawUser = intent.getSerializableExtra(HomeActivity.EXTRA_HOME_USER);
+        if (rawUser instanceof HomeProfileModel) {
+            return (HomeProfileModel) rawUser;
+        }
+
+        if (rawUser != null) {
+            return mapFromGenericUser(rawUser);
+        }
+
+        return null;
+    }
+
+    private HomeProfileModel mapFromGenericUser(Object rawUser) {
+        try {
+            int id = invokeInt(rawUser, "getId", -1);
+            if (id <= 0) {
+                return null;
+            }
+
+            String name = invokeString(rawUser, "getName", "guest");
+            String avatarUrl = invokeString(rawUser, "getAvatarUrl", "");
+            int level = invokeInt(rawUser, "getLevel", 1);
+            int exp = invokeInt(rawUser, "getExp", 0);
+            int rank = invokeInt(rawUser, "getRank", 0);
+            int rankScore = invokeInt(rawUser, "getRankScore", 0);
+            int numberOfMatchs = invokeInt(rawUser, "getNumberOfMatchs", 0);
+            float winningRate = invokeFloat(rawUser, "getWinningRate", 0f);
+            int winningStreak = invokeInt(rawUser, "getWinningStreak", 0);
+
+            return new HomeProfileModel(
+                    id,
+                    name,
+                    avatarUrl,
+                    level,
+                    exp,
+                    rank,
+                    rankScore,
+                    numberOfMatchs,
+                    winningRate,
+                    winningStreak
+            );
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private int invokeInt(Object target, String methodName, int defaultValue) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object value = method.invoke(target);
+            if (value instanceof Number) {
+                return ((Number) value).intValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
+    }
+
+    private float invokeFloat(Object target, String methodName, float defaultValue) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object value = method.invoke(target);
+            if (value instanceof Number) {
+                return ((Number) value).floatValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
+    }
+
+    private String invokeString(Object target, String methodName, String defaultValue) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            Object value = method.invoke(target);
+            if (value instanceof String) {
+                return (String) value;
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
     }
 
     private void initViews() {
@@ -99,9 +197,9 @@ public class RankingActivity extends AppCompatActivity {
     }
 
     private void setupControlHandlers() {
-        tabWeekly.setOnClickListener(v -> onRankingTypeChanged("Monthly", tabWeekly));
-        tabMonthly.setOnClickListener(v -> onRankingTypeChanged("Yearly", tabMonthly));
-        tabTotal.setOnClickListener(v -> onRankingTypeChanged("Total", tabTotal));
+        tabWeekly.setOnClickListener(v -> onRankingTypeChanged(weeklyApiType, tabWeekly));
+        tabMonthly.setOnClickListener(v -> onRankingTypeChanged(monthlyApiType, tabMonthly));
+        tabTotal.setOnClickListener(v -> onRankingTypeChanged(totalApiType, tabTotal));
 
         tabFriend.setOnClickListener(v -> onRankingScopeChanged("Friend"));
         tabGlobal.setOnClickListener(v -> onRankingScopeChanged("Global"));
@@ -110,6 +208,48 @@ public class RankingActivity extends AppCompatActivity {
 
         // Current backend chi ho tro global ranking, nen boi den Global mac dinh.
         onRankingScopeChanged("Global");
+    }
+
+    private void loadRankingTypesAndBoard() {
+        repository.getRankTypes(new RepositoryCallback<>() {
+            @Override
+            public void onSuccess(List<RankTypeModel> data) {
+                applyApiTypeMapping(data);
+                onRankingTypeChanged(weeklyApiType, tabWeekly);
+            }
+
+            @Override
+            public void onError(String message) {
+                // Fallback to default mapping if rank type API fails.
+                onRankingTypeChanged(weeklyApiType, tabWeekly);
+            }
+        });
+    }
+
+    private void applyApiTypeMapping(List<RankTypeModel> apiTypes) {
+        List<String> values = new ArrayList<>();
+        if (apiTypes != null) {
+            for (RankTypeModel item : apiTypes) {
+                if (item != null && item.getValue() != null) {
+                    values.add(item.getValue());
+                }
+            }
+        }
+
+        if (!values.isEmpty()) {
+            weeklyApiType = pickType(values, "Monthly", values.get(0));
+            monthlyApiType = pickType(values, "Yearly", weeklyApiType);
+            totalApiType = pickType(values, "Total", monthlyApiType);
+        }
+    }
+
+    private String pickType(List<String> types, String preferred, String fallback) {
+        for (String type : types) {
+            if (preferred.equalsIgnoreCase(type)) {
+                return type;
+            }
+        }
+        return fallback;
     }
 
     private void onRankingTypeChanged(String apiType, TextView selectedTab) {
@@ -178,6 +318,11 @@ public class RankingActivity extends AppCompatActivity {
     }
 
     private void loadCurrentUserRank() {
+        if (currentUser != null && currentUser.getId() > 0) {
+            requestCurrentUserRank(currentUser.getId());
+            return;
+        }
+
         int userId = sessionManager.getUserId();
         if (userId > 0) {
             requestCurrentUserRank(userId);
@@ -231,7 +376,11 @@ public class RankingActivity extends AppCompatActivity {
     }
 
     private void onBackToGameClick() {
-        startActivity(new Intent(this, HomeActivity.class));
+        Intent intent = new Intent(this, HomeActivity.class);
+        if (currentUser != null) {
+            intent.putExtra(HomeActivity.EXTRA_HOME_USER, currentUser);
+        }
+        startActivity(intent);
         finish();
     }
 }

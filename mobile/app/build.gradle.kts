@@ -2,6 +2,25 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val envVars = mutableMapOf<String, String>()
+val envFile = rootProject.file(".env")
+if (envFile.exists()) {
+    envFile.readLines().forEach { line ->
+        val raw = line.trim()
+        if (raw.isEmpty() || raw.startsWith("#") || !raw.contains("=")) {
+            return@forEach
+        }
+        val idx = raw.indexOf("=")
+        val key = raw.substring(0, idx).trim()
+        val value = raw.substring(idx + 1).trim()
+        if (key.isNotEmpty()) {
+            envVars[key] = value
+        }
+    }
+}
+
+val apiBaseUrl = envVars.getValue("API_BASE_URL").trim()
+
 android {
     namespace = "com.n7.quizbattle"
     compileSdk {
@@ -16,6 +35,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
