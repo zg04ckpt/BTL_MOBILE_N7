@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_result"
+    tools:context=".lobby.activities.MatchConfigActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@android:drawable/ic_media_previous"
+                app:tint="@color/color1"
+                android:contentDescription="Back" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lựa chọn nội dung thi đấu"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/color1"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Kiểu thi đấu section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kiểu thi đấu"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/color1"
+            android:layout_marginBottom="10dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_battle_types"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Thi đấu với người chơi khác với thời gian cố định"
+            android:textSize="12sp"
+            android:textColor="@color/color11"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Số lượng người chơi"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/color1"
+            android:layout_marginBottom="10dp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:scrollbars="none"
+            android:fillViewport="false">
+
+            <LinearLayout
+                android:id="@+id/ll_number_of_players"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingEnd="4dp" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chủ đề thi đấu"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/color1"
+            android:layout_marginBottom="10dp" />
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/fl_topic_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:flexWrap="wrap"
+            app:justifyContent="flex_start"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Confirm button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirm"
+            android:layout_width="match_parent"
+            android:layout_marginTop="100dp"
+            android:layout_height="56dp"
+            android:text="Xác nhận"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/color2"
+            android:backgroundTint="@color/color1"
+            app:cornerRadius="8dp"
+            android:stateListAnimator="@null" />
+
+    </LinearLayout>
+</ScrollView>
