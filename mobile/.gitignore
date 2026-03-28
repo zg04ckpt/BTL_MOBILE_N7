@@ -17,6 +17,6 @@ local.properties
 .idea/
 
 # Gradle Wrapper
-gradle/wrapper/
-gradlew
-gradlew.bat
+#gradle/wrapper/
+#gradlew
+#gradlew.bat
