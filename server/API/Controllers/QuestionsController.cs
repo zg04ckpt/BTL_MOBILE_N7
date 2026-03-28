@@ -54,6 +54,14 @@ namespace API.Controllers
             return Ok(ApiResponse.Success("Question created successfully", result));
         }
 
+        [HttpPost("bulk")]
+        [Authorize(Policy = "OnlyAdmin")]
+        public async Task<IActionResult> CreateMany([FromBody] List<CreateQuestionRequest> requests)
+        {
+            var result = await _questionService.CreateManyAsync(requests);
+            return Ok(ApiResponse.Success("Questions created successfully", result));
+        }
+
 
         [HttpPut("{id}")]
         [Authorize(Policy = "OnlyAdmin")]
@@ -66,12 +74,12 @@ namespace API.Controllers
         }
 
 
-        [HttpDelete("{id}")]
+        [HttpDelete("bulk")]
         [Authorize(Policy = "OnlyAdmin")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteMany([FromBody] List<int> ids)
         {
-            var result = await _questionService.DeleteAsync(id);
-            return Ok(ApiResponse.Success("Question deleted successfully", result));
+            var result = await _questionService.DeleteManyAsync(ids);
+            return Ok(ApiResponse.Success("Questions deleted successfully", result));
         }
     }
 }

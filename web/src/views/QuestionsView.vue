@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-    import { getAllQuestions, getAllTopic, getQuestionDetail, updateQuestion, deleteQuestion, createQuestion, deleteQuestions } from '@/api';
+    import { getAllQuestions, getAllTopic, getQuestionDetail, updateQuestion, createQuestionsBulk, deleteQuestions } from '@/api';
     import * as XLSX from 'xlsx';
     import { QuestionLevel, QuestionListItemDto, QuestionStatus, SearchQuestionRequest, TopicListItemDto, UpdateQuestionRequest, QuestionDetailDto, QuestionLevelLabel, QuestionTypeLabel, QuestionStatusLabel } from '@/types';
     import { UploadOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons-vue';
@@ -219,32 +219,14 @@
                 return;
             }
 
-            // Send sequential create requests with progress
-            let hideLoading = message.loading(`Đang tạo 0/${createRequests.length}`, 0);
-            const errors: Array<{ index: number; message: string }> = [];
-            let successCount = 0;
-            for (let i = 0; i < createRequests.length; i++) {
-                hideLoading();
-                hideLoading = message.loading(`Đang tạo ${i + 1}/${createRequests.length}`, 0);
-                const req = createRequests[i];
-                try {
-                    const res = await createQuestion(req as any);
-                    if (res.isSuccess) {
-                        successCount++;
-                    } else {
-                        errors.push({ index: i + 1 + startRow, message: res.message || 'Lỗi' });
-                    }
-                } catch (err: any) {
-                    errors.push({ index: i + 1 + startRow, message: err?.message || 'Lỗi khi gọi API' });
-                }
-            }
+            const hideLoading = message.loading(`Đang tạo ${createRequests.length} câu hỏi`, 0);
+            const res = await createQuestionsBulk(createRequests as any);
             hideLoading();
 
-            if (errors.length === 0) {
-                message.success(`Nhập thành công ${successCount}/${createRequests.length} câu hỏi`);
+            if (res.isSuccess) {
+                message.success(`Nhập thành công ${createRequests.length} câu hỏi`);
             } else {
-                message.error(`Hoàn thành: ${successCount}/${createRequests.length}. Lỗi ở ${errors.length} dòng.`);
-                console.error('Import errors', errors);
+                message.error(`Nhập thất bại: ${res.message || 'Lỗi khi gọi API'}`);
             }
 
             isUploadModalOpen.value = false;
@@ -383,7 +365,7 @@
     const handleDeleteQuestion = async (questionId: number) => {
         const hideLoading = message.loading('Đang xóa...', 0);
         try {
-            const res = await deleteQuestion(questionId);
+            const res = await deleteQuestions([questionId]);
             hideLoading();
             if (res.isSuccess) {
                 message.success('Xóa câu hỏi thành công');

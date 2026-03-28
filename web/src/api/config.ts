@@ -103,3 +103,14 @@ export const del = async <T = void>(url: string): Promise<ApiResult<T>> => {
 		};
 	}
 };
+
+export const delWithBody = async <T = void>(url: string, data: any): Promise<ApiResult<T>> => {
+	try {
+		return (await apiClient.delete<ApiResult<T>>(url, { data })).data;
+	} catch (error: any) {
+		return {
+			isSuccess: false,
+			message: error?.data?.message || "Yêu cầu thất bại."
+		};
+	}
+};

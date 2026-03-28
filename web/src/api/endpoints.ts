@@ -23,11 +23,11 @@ export const endpoints = {
     questions: {
         paging: (request: SearchQuestionRequest) => "/api/questions/paging?" + toQueryParams(request),
         create: "/api/questions",
+        bulkCreate: "/api/questions/bulk",
         detail: (id: number) => `/api/questions/${id}`,
-        delete: (id: number) => `/api/questions/${id}`,
         update: (id: number) => `/api/questions/${id}`,
         import: "/api/questions/import-excel",
-        bulkDelete: "/api/questions/bulk-delete",
+        bulkDelete: "/api/questions/bulk",
     },
     events: {
         getAll: "/api/events",

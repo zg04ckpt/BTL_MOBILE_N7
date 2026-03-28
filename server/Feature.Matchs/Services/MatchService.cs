@@ -140,7 +140,7 @@ namespace Feature.Matchs.Services
 
         public async Task StartMatchAsync(LobbyRoomDto roomInfo, List<PlayerInLobbyInfoDto> players)
         {
-            var settings = await GetRuntimeSettingsAsync();
+            var settings = await _settingsService.GetAllSettingsAsync();
             var questions = await MakeQuestionSetForQuizBattleMatch(
                 roomInfo.ContentType,
                 roomInfo.TopicId,
@@ -387,10 +387,7 @@ namespace Feature.Matchs.Services
                 ?? throw new NotFoundException("No completed match result found for this user");
         }
 
-        private string MapMatchRoomForTracking(
-            List<Question> questions, 
-            List<PlayerInLobbyInfoDto> players, 
-            Match match)
+        private string MapMatchRoomForTracking(List<Question> questions, List<PlayerInLobbyInfoDto> players, Match match)
         {
             var trackingId = Guid.NewGuid().ToString();
             _matchs.TryAdd(trackingId, new MatchRoomMappingDto
@@ -418,16 +415,7 @@ namespace Feature.Matchs.Services
             return trackingId;
         }
 
-        /// <summary>
-        /// Sinh danh sách câu hỏi cho trận đấu.
-        /// Random  : hoàn toàn ngẫu nhiên, không phân biệt topic hay level
-        /// Mix     : hỗn hợp nhiều topic, phân tỉ lệ level
-        /// OnlyOne : lấy đúng topic chỉ định, phân tỉ lệ level
-        /// </summary>
-        private async Task<List<Question>> MakeQuestionSetForQuizBattleMatch(
-            MatchContentType contentType,
-            int? topicId,
-            int totalQuestions)
+        private async Task<List<Question>> MakeQuestionSetForQuizBattleMatch(MatchContentType contentType, int? topicId, int totalQuestions)
         {
             var questionPool = await _uow.Repository<Question>().GetAllAsync(
                 predicate: e => true,
@@ -476,24 +464,6 @@ namespace Feature.Matchs.Services
 
             // Shuffle kết quả cuối
             return selected.OrderBy(_ => rng.Next()).ToList();
-        }
-
-        private async Task<(int QuestionTimeLimit, int QuestionsPerMatch, int BaseWinPoints, int BaseLosePoints)> GetRuntimeSettingsAsync()
-        {
-            try
-            {
-                var settings = await _settingsService.GetAllSettingsAsync();
-                return (
-                    Math.Max(1, settings.QuestionTimeLimit),
-                    Math.Max(1, settings.QuestionsPerMatch),
-                    settings.BaseWinPoints,
-                    settings.BaseLosePoints);
-            }
-            catch (Exception ex)
-            {
-                await _logger.LogError($"GetRuntimeSettingsAsync: fallback to default settings because of error: {ex.Message}");
-                return (15, 10, 20, 15);
-            }
         }
     }
 }

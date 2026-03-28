@@ -83,7 +83,7 @@
             <div v-if="selectedEvent.type == EventType.LuckySpin">
                 <!-- Số lượt quay tối đa trong ngày -->
                 <div class="mb-1">Số lượt quay tối đa trong ngày</div>
-                <a-input type="number" :min="1" v-model:value="selectedEvent.maxSpinTimePerDay" placeholder="Nhập số lượng" class="mb-2"/>
+                <a-input type="number" :min="1" v-model:value.number="selectedEvent.maxSpinTimePerDay" placeholder="Nhập số lượng" class="mb-2"/>
                 
                 <!-- Items -->
                 <div class="mb-2">Danh sách vật phẩm</div>
@@ -91,8 +91,8 @@
                     <a-select class="me-2 flex-fill" v-model:value="item.reward.eventRewardId" @change="(value:any) => item.reward.eventRewardId = value">
                         <a-select-option v-for="item in rewards" :value="item.id">{{ item.name }}</a-select-option>
                     </a-select>
-                    <a-input placeholder="Nhập giá trị" type="number" v-model:value="item.reward.value" class="me-2 w-25"/>
-                    <a-input suffix="%" placeholder="Nhập tỉ lệ" type="number" v-model:value="item.rate" class="me-2 w-25"/>
+                    <a-input placeholder="Nhập giá trị" type="number" v-model:value.number="item.reward.value" class="me-2 w-25"/>
+                    <a-input suffix="%" placeholder="Nhập tỉ lệ" type="number" v-model:value.number="item.rate" class="me-2 w-25"/>
                     <a-button :icon="h(MinusOutlined)" style="aspect-ratio: 1/1;" @click="() => selectedEvent.spinItems.splice(index, 1)"></a-button>
                 </div>
                 <div class="d-flex">
@@ -129,7 +129,7 @@
                             <a-select-option :value="TournamentRewardsTaskType.LoseMatch">Thua trận</a-select-option>
                             <a-select-option :value="TournamentRewardsTaskType.WinMatch">Thắng trận</a-select-option>
                         </a-select>
-                        <a-input placeholder="SL trận" type="number" v-model:value="task.numberOfMatchs" class="me-2 w-25"/>
+                        <a-input placeholder="SL trận" type="number" v-model:value.number="task.numberOfMatchs" class="me-2 w-25"/>
                         <a-button :icon="h(MinusOutlined)" style="aspect-ratio: 1/1;" @click="() => selectedEvent.tasks.splice(index, 1)"></a-button>
                     </div>
                     <!-- Task rewards -->
@@ -139,7 +139,7 @@
                             <a-select class="me-2 flex-fill" v-model:value="r.eventRewardId" @change="(value:any) => r.eventRewardId = value">
                                 <a-select-option v-for="item in rewards" :value="item.id">{{ item.name }}</a-select-option>
                             </a-select>
-                            <a-input placeholder="Nhập giá trị" type="number" v-model:value="r.value" class="me-2 w-25"/>
+                            <a-input placeholder="Nhập giá trị" type="number" v-model:value.number="r.value" class="me-2 w-25"/>
                             <a-button :icon="h(MinusOutlined)" style="aspect-ratio: 1/1;" @click="() => task.rewards.splice(rindex, 1)"></a-button>
                         </div>
                         <a-button  type="link" size="small" :icon="h(PlusOutlined)" @click="() => {
@@ -188,7 +188,7 @@
                             <a-select class="me-2 flex-fill" v-model:value="r.eventRewardId" @change="(value:any) => r.eventRewardId = value">
                                 <a-select-option v-for="item in rewards" :value="item.id">{{ item.name }}</a-select-option>
                             </a-select>
-                            <a-input placeholder="Nhập giá trị" type="number" v-model:value="r.value" class="me-2 w-25"/>
+                            <a-input placeholder="Nhập giá trị" type="number" v-model:value.number="r.value" class="me-2 w-25"/>
                             <a-button :icon="h(MinusOutlined)" style="aspect-ratio: 1/1;" @click="() => threshold.rewards.splice(rindex, 1)"></a-button>
                         </div>
                         <a-button  type="link" size="small" :icon="h(PlusOutlined)" @click="() => {
@@ -366,6 +366,50 @@ const validateEventForUpdate = (event: any): ValidationResult => {
     return { isValid: true };
 };
 
+const normalizeEventNumbers = (event: any) => {
+    if (!event) return;
+
+    if (event.type === EventType.LuckySpin) {
+        event.maxSpinTimePerDay = Number(event.maxSpinTimePerDay);
+        if (Array.isArray(event.spinItems)) {
+            event.spinItems.forEach((item: any) => {
+                if (item.reward) {
+                    item.reward.eventRewardId = Number(item.reward.eventRewardId);
+                    item.reward.value = Number(item.reward.value);
+                }
+                item.rate = Number(item.rate);
+            });
+        }
+    } else if (event.type === EventType.TournamentRewards) {
+        if (Array.isArray(event.tasks)) {
+            event.tasks.forEach((task: any) => {
+                task.numberOfMatchs = Number(task.numberOfMatchs);
+                if (Array.isArray(task.rewards)) {
+                    task.rewards.forEach((reward: any) => {
+                        reward.eventRewardId = Number(reward.eventRewardId);
+                        reward.value = Number(reward.value);
+                    });
+                }
+            });
+        }
+    } else if (event.type === EventType.QuizMilestoneChallenge) {
+        if (Array.isArray(event.thresholds)) {
+            event.thresholds.forEach((threshold: any) => {
+                threshold.expScoreGained = Number(threshold.expScoreGained);
+                if (Array.isArray(threshold.rewards)) {
+                    threshold.rewards.forEach((reward: any) => {
+                        reward.eventRewardId = Number(reward.eventRewardId);
+                        reward.value = Number(reward.value);
+                    });
+                }
+                if (Array.isArray(threshold.challengeQuestionIds)) {
+                    threshold.challengeQuestionIds = threshold.challengeQuestionIds.map((id: any) => Number(id));
+                }
+            });
+        }
+    }
+};
+
 const handleUpdate = async () => {
     if (!selectedEvent.value) return;
 
@@ -374,6 +418,8 @@ const handleUpdate = async () => {
         message.error(validation.message || "Dữ liệu cập nhật không hợp lệ");
         return;
     }
+
+    normalizeEventNumbers(selectedEvent.value);
     
     const hideLoading = message.loading("Đang xử lý ...");
     const request: UpdateEventRequest = {
