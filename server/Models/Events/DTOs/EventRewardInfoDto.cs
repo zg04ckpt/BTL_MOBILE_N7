@@ -5,6 +5,7 @@ namespace Models.Events.DTOs
 {
     public class EventRewardInfoDto
     {
+        public int Id { get; set; }
         public string Name { get; set; }
 
         [JsonConverter(typeof(JsonStringEnumConverter))]

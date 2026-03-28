@@ -8,7 +8,7 @@ namespace Feature.Settings
     {
         public static IServiceCollection AddSettingsFeature(this IServiceCollection services)
         {
-            services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
+            services.AddScoped<ISettingsService, SettingsService>();
             
             return services;
         }

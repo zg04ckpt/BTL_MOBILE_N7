@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { HomeOutlined } from '@ant-design/icons-vue'
+import { HomeOutlined, UserOutlined, QuestionOutlined, 
+  SettingOutlined, StarOutlined, CrownOutlined, DingtalkOutlined
+ } from '@ant-design/icons-vue'
 </script>
 
 <template>
@@ -11,32 +13,32 @@ import { HomeOutlined } from '@ant-design/icons-vue'
       </router-link>
 
       <router-link to="/users" class="item active">
-        <HomeOutlined />
+        <UserOutlined />
         <div class="ms-2">Quản lý người dùng</div>
       </router-link>
 
       <router-link to="/questions" class="item">
-        <HomeOutlined />
+        <QuestionOutlined />
         <div class="ms-2">Quản lý câu hỏi</div>
       </router-link>
 
       <router-link to="/settings" class="item">
-        <HomeOutlined />
+        <SettingOutlined />
         <div class="ms-2">Quản lý cấu hình</div>
       </router-link>
 
       <router-link to="topics" class="item">
-        <HomeOutlined />
+        <StarOutlined />
         <div class="ms-2">Quản lý chủ đề</div>
       </router-link>
 
       <router-link to="events" class="item">
-        <HomeOutlined />
+        <CrownOutlined />
         <div class="ms-2">Quản lý sự kiện</div>
       </router-link>
 
       <router-link to="matches" class="item">
-        <HomeOutlined />
+        <DingtalkOutlined />
         <div class="ms-2">Quản lý trận đấu</div>
       </router-link>
     </div>
@@ -50,7 +52,7 @@ import { HomeOutlined } from '@ant-design/icons-vue'
   height: 40px;
   align-items: center;
   padding: 10px;
-  border-bottom: 2px solid #021df3;
+  border-bottom: 1px solid #021df3;
   color: black;
   text-decoration: none;
 }
@@ -71,6 +73,6 @@ aside {
   bottom: 0;
   left: 0;
   width: 250px;
-  border-right: 2px solid #021df3;
+  border-right: 1px solid #021df3;
 }
 </style>

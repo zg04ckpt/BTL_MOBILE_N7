@@ -1,14 +1,13 @@
 namespace Models.Settings.DTOs
 {
-    public class SystemConfigurationsDto
+    public class SettingsDto
     {
-        // General Settings
+        // General Setting
         public bool MaintenanceMode { get; set; }
         public string WhitelistIPs { get; set; }
-        public string RequiredAppVersion { get; set; }
         public int LoginLiveTime { get; set; }
         
-        // Game Settings
+        // Game Setting
         public int QuestionTimeLimit { get; set; }
         public int QuestionsPerMatch { get; set; }
         public int BaseWinPoints { get; set; }

@@ -411,7 +411,7 @@ namespace Data.Migrations
                     b.ToTable("Topics", (string)null);
                 });
 
-            modelBuilder.Entity("Models.Settings.Entities.SystemConfiguration", b =>
+            modelBuilder.Entity("Models.Settings.Entities.Setting", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -425,8 +425,7 @@ namespace Data.Migrations
 
                     b.Property<string>("Key")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -441,7 +440,7 @@ namespace Data.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("SystemConfigurations", (string)null);
+                    b.ToTable("Settings", (string)null);
                 });
 
             modelBuilder.Entity("Feature.Users.Entities.User", b =>
@@ -514,7 +513,7 @@ namespace Data.Migrations
                     b.HasOne("Models.Quizzes.Entities.Question", "Question")
                         .WithMany()
                         .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Match");

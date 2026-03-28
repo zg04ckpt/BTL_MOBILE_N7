@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Models.Users.DTOs;
 using Models.Users.Enums;
 using Models.Users.Requests;
+using Newtonsoft.Json.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -22,6 +23,27 @@ namespace Feature.Users.Services
         public AuthService(IUnitOfWork uow, IConfiguration configuration) : base(uow)
         {
             _configuration = configuration;
+        }
+
+        public async Task<LoginSesssionDto> GetLoginInfoAsync(int userId)
+        {
+            var userRepository = _uow.Repository<User>();
+
+            var user = await userRepository.GetFirstAsync(
+                predicate: u => u.Id == userId,
+                includes: u => u.Role
+            );
+
+            return new LoginSesssionDto
+            {
+                Id = user.Id,
+                AvatarUrl = user.AvatarUrl,
+                Level = user.Level,
+                Name = user.Name,
+                Rank = user.Rank,
+                RankScore = user.RankScore,
+                RoleName = user.Role.Name
+            };
         }
 
         public async Task<LoginSesssionDto> LogInAsync(LoginRequest request, int? loginLiveTimeMinutes = null)
@@ -68,13 +90,15 @@ namespace Feature.Users.Services
                 Name = user.Name,
                 Rank = user.Rank,
                 RankScore = user.RankScore,
-                AccessToken = token
+                AccessToken = token,
+                RoleName = user.Role.Name
             };
         }
 
         public async Task RegisterAsync(RegisterRequest request)
         {
             var userRepository = _uow.Repository<User>();
+            var roleRepository = _uow.Repository<Role>();
 
             var existingUserByEmail = await userRepository.ExistsAsync(u => u.Email == request.Email);
             if (existingUserByEmail)
@@ -86,6 +110,13 @@ namespace Feature.Users.Services
             if (existingUserByPhone)
             {
                 throw new BadRequestException("Phone number is already in use");
+            }
+
+            var userRole = await roleRepository.GetFirstAsync(
+                predicate: r => r.Name == nameof(RoleName.User));
+            if (userRole == null)
+            {
+                throw new ServerErrorException("Default role 'User' is not configured");
             }
 
             var newUser = new User
@@ -100,7 +131,7 @@ namespace Feature.Users.Services
                 RankScore = 0,
                 Exp = 0,
                 CreatedAt = DateTime.UtcNow,
-                RoleId = 2,
+                RoleId = userRole.Id,
                 AvatarUrl = string.Empty
             };
 
@@ -115,7 +146,7 @@ namespace Feature.Users.Services
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Role, user.Role.Name)
+                new Claim(ClaimTypes.Role, user.Role.Name),
             };
 
             var issuer = _configuration["JWT:Issuer"] ?? "QuizBattle.API";
