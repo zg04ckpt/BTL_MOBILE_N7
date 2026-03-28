@@ -46,14 +46,14 @@ namespace Feature.Matchs.Services
                 TopicsOfContent = topics.ToArray(),
                 ContentTypes = new[]
                 {
-                    new { Type = MatchContentType.Random, Label = "Ngẫu nhiên" },
-                    new { Type = MatchContentType.Mix, Label = "Hỗn hợp" },
-                    new { Type = MatchContentType.OnlyOne, Label = "Theo chủ đề" },
+                    new { Type = nameof(MatchContentType.Random), Label = "Ngẫu nhiên" },
+                    new { Type = nameof(MatchContentType.Mix), Label = "Hỗn hợp" },
+                    new { Type = nameof(MatchContentType.OnlyOne), Label = "Theo chủ đề" },
                 },
                 TypesOfBattle = new[]
                 {
-                    new { Type = BattleType.Single, Label = "Đấu đơn vượt ải" },
-                    new { Type = BattleType.Team, Label = "Đấu đội" },
+                    new { Type = nameof(BattleType.Single), Label = "Đấu đơn vượt ải" },
+                    new { Type = nameof(BattleType.Team), Label = "Đấu đội" },
                 }
             };
         }

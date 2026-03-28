@@ -24,6 +24,7 @@ namespace Feature.Events.Services
         {
             PropertyNameCaseInsensitive = true
         };
+        private static readonly Random _rand = new Random();
 
         public EventService(IUnitOfWork uow) : base(uow)
         {
@@ -90,23 +91,20 @@ namespace Feature.Events.Services
             return data;
         }
 
-        public async Task<Dictionary<int, EventRewardInfoDto>> GetEventRewardMappingsAsync()
+        public async Task<List<EventRewardInfoDto>> GetEventRewardMappingsAsync()
         {
             var rewards = await _uow.Repository<EventReward>().GetAllAsync(
                 predicate: e => true,
-                selector: e => new
+                selector: e => new EventRewardInfoDto
                 {
-                    e.Id,
-                    Data = new EventRewardInfoDto
-                    {
-                        Name = e.Name,
-                        Type = e.Type,
-                        Desc = e.Desc,
-                        Unit = e.Unit
-                    }
+                    Id = e.Id,
+                    Name = e.Name,
+                    Type = e.Type,
+                    Desc = e.Desc,
+                    Unit = e.Unit
                 });
 
-            return rewards.ToDictionary(x => x.Id, x => x.Data);
+            return rewards.ToList();
         }
 
         public async Task<List<object>> GetUserInEventProgressesAsync(int userId)
@@ -136,10 +134,12 @@ namespace Feature.Events.Services
                 } 
                 else if (item.EventType == EventType.LuckySpin)
                 {
+                    var spinTime = JsonSerializer.Deserialize<int>(item.ProgressJsonData, JsonSerializerOptions);
+                    if (item.LastChanged.Date != DateTime.UtcNow.Date) spinTime = 0;
                     progresses.Add(new LuckySpinProgress
                     {
                         EventId = item.EventId,
-                        TodaySpinTime = JsonSerializer.Deserialize<int>(item.ProgressJsonData, JsonSerializerOptions),
+                        TodaySpinTime = spinTime,
                         LastChanged = item.LastChanged.ToLocalTime()
                     });
                 }
@@ -195,12 +195,12 @@ namespace Feature.Events.Services
 
         public async Task<ChangedResponse> UpdateEventAsync(int eventId, UpdateEventRequest request)
         {
-            await ValidateEventConfigAsync(eventId, request);
+            var config = await ValidateEventConfigAsync(eventId, request);
 
             var e = await GetEntityAsync<Event>(eventId);
             e.StartTime = request.StartTime.ToUniversalTime();
             e.EndTime = request.EndTime?.ToUniversalTime();
-            e.EventConfigJsonData = request.EventConfigJsonData;
+            e.EventConfigJsonData = config;
             e.Desc = request.Desc;
             e.IsLocked = request.IsLocked;
             e.Name = request.Name;
@@ -211,7 +211,106 @@ namespace Feature.Events.Services
             return ChangedResponse.FromEntity(e);
         }
 
-        private async Task ValidateEventConfigAsync(int eventId, UpdateEventRequest request)
+        public async Task<LuckySpinItemDto> SpinItemAsync(int userId, int eventId)
+        {
+            var user = await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == userId,
+                includes: e => e.EventsProgress); // Lấy lịch sử sự kiện của user
+
+            if (user == null)
+            {
+                throw new NotFoundException("User not found");
+            }
+
+            var spinEvent = await GetEntityAsync<Event>(eventId);
+            if (spinEvent.EventType != EventType.LuckySpin)
+            {
+                throw new BadRequestException("Event must be LuckySpin event");
+            }
+
+            var history = user.EventsProgress
+                .FirstOrDefault(p => p.EventId == eventId);
+
+            // Nếu lượt quay được cập nhật từ những ngày trước thì reset về 0,
+            // Nếu là trong ngày thì lấy ra để kiểm tra số lần quay tối đa
+            int spinTime = 0;
+            if (history != null && history.LastChanged.Date == DateTime.UtcNow.Date)
+            {
+                spinTime = JsonSerializer.Deserialize<int>(history.ProgressJsonData, JsonSerializerOptions);
+            }
+
+            var spinEventConfig = JsonSerializer.Deserialize<LuckySpinEventDto>(spinEvent.EventConfigJsonData);
+            if (spinTime >= spinEventConfig.MaxSpinTimePerDay)
+            {
+                throw new BadRequestException("The maximum number of spins has been reached");
+            }
+
+            // Xử lý quay
+            double roll = _rand.NextDouble() * 100;
+            double cumulative = 0;
+            LuckySpinItemDto? winItem = null;
+            foreach (var item in spinEventConfig.SpinItems)
+            {
+                cumulative += item.Rate;
+                if (roll < cumulative)
+                {
+                    winItem = item;
+                    break;
+                }
+            }
+            if (winItem == null)
+            {
+                throw new ServerErrorException("Failed to spin item, win item is null");
+            }
+
+            // Cập nhật lại số lần quay / tạo mới lịch sử nếu là lần đầu quay
+            spinTime++;
+            if (history == null)
+            {
+                history = new UserInEvent
+                {
+                    User = user,
+                    Event = spinEvent
+                };
+                user.EventsProgress.Add(history);
+            }
+            history.LastChanged = DateTime.UtcNow;
+            history.ProgressJsonData = JsonSerializer.Serialize(spinTime);
+            await _uow.Repository<User>().UpdateAsync(user);
+
+            // Thêm vật phẩm vào kho của user / thêm user vào danh sách người có vật phẩm này
+            if (winItem.Reward != null)
+            {
+                var reward = await _uow.Repository<EventReward>().GetFirstAsync(
+                    predicate: e => e.Id == winItem.Reward.EventRewardId,
+                    includes: e => e.ClaimedRewards)
+                    ?? throw new ServerErrorException("Reward info is not exists");
+
+                var claimed = reward.ClaimedRewards.FirstOrDefault(cr => cr.UserId == userId);
+                if (claimed != null)
+                {
+                    claimed.Value += winItem.Reward.Value;
+                } 
+                else
+                {
+                    reward.ClaimedRewards.Add(new ClaimedReward
+                    {
+                        User = user,
+                        Value = winItem.Reward.Value
+                    });
+                }
+
+                await _uow.Repository<EventReward>().UpdateAsync(reward);
+            }
+
+            await _uow.SaveChangesAsync();
+
+            winItem.Rate = 0;
+            return winItem;
+        }
+
+        #region Private
+        private async Task<string> ValidateEventConfigAsync(int eventId, UpdateEventRequest request)
         {
             var existingEvent = await GetEntityAsync<Event>(eventId);
             var eventType = existingEvent.EventType;
@@ -273,6 +372,14 @@ namespace Feature.Events.Services
 
                         ValidateEventRewardDto(item.Reward);
                     }
+
+                    // Update item id
+                    for (int i = 0; i < luckySpinConfig.SpinItems.Count; i++)
+                    {
+                        luckySpinConfig.SpinItems[i].ItemId = i + 1;
+                    }
+
+                    request.EventConfigJsonData = JsonSerializer.Serialize(luckySpinConfig);
                 }
                 else if (eventType == EventType.TournamentRewards)
                 {
@@ -302,6 +409,8 @@ namespace Feature.Events.Services
                         }
                     }
                 }
+
+                return request.EventConfigJsonData;
             }
             catch (BadRequestException)
             {
@@ -523,5 +632,8 @@ namespace Feature.Events.Services
                 LastChanged = lastChanged.ToLocalTime()
             };
         }
+
+        #endregion
+        
     }
 }

@@ -41,9 +41,9 @@ namespace API
 
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowLocal",
+                options.AddPolicy("AllowWebLocalTest",
                     builder => builder
-                        .WithOrigins("http://localhost:4200")
+                        .WithOrigins("http://localhost:3000")
                         .AllowCredentials()
                         .AllowAnyMethod()
                         .AllowAnyHeader());
@@ -61,7 +61,14 @@ namespace API
             {
                 opt.AddPolicy(StringUtil.PolicyNames.OnlyAdmin, p =>
                 {
-                    p.RequireRole(nameof(RoleName.Admin));
+                    p.RequireRole(
+                        nameof(RoleName.Admin),
+                        nameof(RoleName.SuperAdmin)
+                    );
+                });
+                opt.AddPolicy(StringUtil.PolicyNames.OnlySuperAdmin, p =>
+                {
+                    p.RequireRole(nameof(RoleName.SuperAdmin));
                 });
             });
             builder.Services.AddAuthentication(opt =>
@@ -131,7 +138,7 @@ namespace API
                                 kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                             );
 
-                        var response = ApiResponse.Failure("Invalid input data", errors);
+                        var response = ApiResponse.Failure(errors.First().Value.First(), errors);
                         return new BadRequestObjectResult(response);
                     };
                 });
@@ -177,7 +184,7 @@ namespace API
                 app.UseSwaggerUI();
             }
             app.UseHttpsRedirection();
-            app.UseCors("AllowLocal");
+            app.UseCors("AllowWebLocalTest");
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();

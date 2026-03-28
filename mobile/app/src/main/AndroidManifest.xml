@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.QuizBattle" >
         <activity
+            android:name=".lobby.activities.MatchConfigActivity"
+            android:exported="true" />
+        <activity
             android:name=".battles.activities.MatchResultActivity"
             android:exported="false" />
         <activity
@@ -42,10 +45,22 @@
             android:exported="true" />
         <activity
             android:name=".users.activities.LoginActivity"
-            android:exported="true" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".tests.activities.TestActivity"
-            android:exported="true" />
+            android:exported="true" >
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+        </activity>
     </application>
 
 </manifest>

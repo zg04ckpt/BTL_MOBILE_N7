@@ -16,6 +16,7 @@ namespace Models.Quizzes.Requests
 
         public IFormFile? Video { get; set; }
 
+
         [Required(ErrorMessage = "Question type is required")]
         public QuestionType Type { get; set; }
 

@@ -48,6 +48,18 @@ namespace API.Controllers
             return Ok(ApiResponse.Success(progresses));
         }
 
+        [HttpGet("{eventId}/spin")]
+        [Authorize]
+        public async Task<IActionResult> SpinItem(int eventId)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var winItem = await _eventService.SpinItemAsync(userId, eventId);
+            return Ok(ApiResponse.Success(new
+            {
+                WinItem = winItem
+            }));
+        }
+
         [HttpPut("my-progress")]
         [Authorize]
         public async Task<IActionResult> UpdateMyProgress([FromBody] UpdateMyEventProgressRequest request)
@@ -56,6 +68,8 @@ namespace API.Controllers
             var result = await _eventService.UpdateMyProgressAsync(userId, request);
             return Ok(ApiResponse.Success("Event progress updated successfully", result));
         }
+
+        #region Manage
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateEventRequest request)
@@ -77,5 +91,7 @@ namespace API.Controllers
             var result = await _eventService.DeleteEventAsync(eventId);
             return Ok(ApiResponse.Success("Event deleted successfully", result));
         }
+
+        #endregion
     }
 }

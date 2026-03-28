@@ -15,13 +15,13 @@ namespace Data
         private readonly AppDbContext _context;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogService<DataInitializer> _logger;
-        private readonly ISystemConfigurationService _configurationService;
+        private readonly ISettingsService _configurationService;
 
         public DataInitializer(
             AppDbContext context, 
             IUnitOfWork unitOfWork,
             ILogService<DataInitializer> logger,
-            ISystemConfigurationService configurationService)
+            ISettingsService configurationService)
         {
             _context = context;
             _unitOfWork = unitOfWork;
@@ -155,7 +155,7 @@ namespace Data
                 }
 
                 // Initialize default system configurations
-                await _configurationService.InitializeDefaultConfigurationsAsync();
+                await _configurationService.InitializeDefaultSettingsAsync();
 
                 await _unitOfWork.CommitTransactionAsync();
             }
