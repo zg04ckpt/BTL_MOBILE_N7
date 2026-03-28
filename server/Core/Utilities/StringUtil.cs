@@ -12,6 +12,7 @@ namespace Core.Utilities
         public class PolicyNames
         {
             public const string OnlyAdmin = nameof(OnlyAdmin);
+            public const string OnlySuperAdmin = nameof(OnlySuperAdmin);
         }
 
         public class ExceptionMessages

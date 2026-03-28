@@ -78,7 +78,7 @@ namespace Feature.Quizzes.Services
 
         public async Task<Paginated<QuestionListItemDto>> GetPagingAsync(SearchQuestionRequest request)
         {
-            var filter = PredicateBuilder.New<Question>();
+            var filter = PredicateBuilder.New<Question>(true);
             if (!string.IsNullOrEmpty(request.StringContent))
             {
                 filter = filter.And(e => e.StringContent.Contains(request.StringContent));
@@ -132,6 +132,40 @@ namespace Feature.Quizzes.Services
             return ChangedResponse.FromEntity(entity);
         }
 
+        public async Task<IEnumerable<ChangedResponse>> CreateManyAsync(List<CreateQuestionRequest> requests)
+        {
+            if (requests == null || requests.Count == 0)
+            {
+                throw new BadRequestException("Question list is empty");
+            }
+
+            var entities = new List<Question>(requests.Count);
+            var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var request in requests)
+            {
+                if (request == null)
+                {
+                    throw new BadRequestException("Question item is required");
+                }
+
+                var slug = StringUtil.ToSlug(request.StringContent ?? string.Empty);
+                if (!slugs.Add(slug))
+                {
+                    throw new BadRequestException("Question content is duplicated in request list");
+                }
+
+                await ConfirmValidCreateDataAsync(request);
+                var entity = await MapFromCreateRequestAsync(request);
+                entities.Add(entity);
+            }
+
+            await _uow.Repository<Question>().AddAsync(entities.ToArray());
+            await _uow.SaveChangesAsync();
+
+            return entities.Select(ChangedResponse.FromEntity).ToList();
+        }
+
         public async Task<ChangedResponse> UpdateAsync(int id, UpdateQuestionRequest request)
         {
             var entity = await GetEntityAsync<Question>(id);
@@ -151,6 +185,28 @@ namespace Feature.Quizzes.Services
             await _uow.SaveChangesAsync();
 
             return ChangedResponse.FromEntity(entity);
+        }
+
+        public async Task<IEnumerable<ChangedResponse>> DeleteManyAsync(List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                throw new BadRequestException("Question id list is empty");
+            }
+
+            var uniqueIds = ids.Distinct().ToList();
+            var entities = (await _uow.Repository<Question>().GetAllAsync(q => uniqueIds.Contains(q.Id))).ToList();
+
+            if (entities.Count != uniqueIds.Count)
+            {
+                var missingIds = uniqueIds.Except(entities.Select(e => e.Id)).ToList();
+                throw new NotFoundException($"Question not found: {string.Join(", ", missingIds)}");
+            }
+
+            await _uow.Repository<Question>().DeleteAsync(entities.ToArray());
+            await _uow.SaveChangesAsync();
+
+            return entities.Select(ChangedResponse.FromEntity).ToList();
         }
 
         private async Task ConfirmValidCreateDataAsync(CreateQuestionRequest request)

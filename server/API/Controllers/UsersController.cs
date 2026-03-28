@@ -1,5 +1,7 @@
 ﻿using CNLib.Services.Logs;
+using CNLib.Utils;
 using Core.Models;
+using Core.Utilities;
 using Feature.Users.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +24,7 @@ namespace API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = Core.Utilities.StringUtil.PolicyNames.OnlyAdmin)]
         public async Task<IActionResult> GetAll()
         {
             var users = await _userService.GetAllAsync();
@@ -29,6 +32,7 @@ namespace API.Controllers
         }
 
         [HttpGet("paging")]
+        [Authorize(Policy = Core.Utilities.StringUtil.PolicyNames.OnlyAdmin)]
         public async Task<IActionResult> GetPaging([FromQuery] SearchUserRequest request)
         {
             var result = await _userService.GetPagingAsync(request);
@@ -36,6 +40,7 @@ namespace API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Core.Utilities.StringUtil.PolicyNames.OnlyAdmin)]
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _userService.GetByIdAsync(id);
@@ -69,7 +74,8 @@ namespace API.Controllers
             return Ok(ApiResponse.Success("Profile updated successfully", result));
         }
 
-        [HttpPost] 
+        [HttpPost]
+        [Authorize(Policy = Core.Utilities.StringUtil.PolicyNames.OnlySuperAdmin)] 
         public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
         {
             var result = await _userService.CreateAsync(request);
@@ -80,6 +86,7 @@ namespace API.Controllers
         [HttpPut("{id}")]
         [RequestSizeLimit(10 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
+        [Authorize(Policy = Core.Utilities.StringUtil.PolicyNames.OnlyAdmin)]
         public async Task<IActionResult> Update(int id, [FromForm] UpdateUserRequest request)
         {
             var result = await _userService.UpdateAsync(id, request);
@@ -88,6 +95,7 @@ namespace API.Controllers
 
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = Core.Utilities.StringUtil.PolicyNames.OnlySuperAdmin)]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _userService.DeleteAsync(id);

@@ -297,7 +297,7 @@ namespace Data.Migrations
                     b.ToTable("Topics", (string)null);
                 });
 
-            modelBuilder.Entity("Models.Settings.Entities.SystemConfiguration", b =>
+            modelBuilder.Entity("Models.Setting.Entities.Setting", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

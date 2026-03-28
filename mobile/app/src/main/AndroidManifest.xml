@@ -16,31 +16,10 @@
 
 <!--       start new activities -->
         <activity
-            android:name=".events.presentation.activities.HomeEventActivity"
-            android:exported="true" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".events.presentation.activities.SeasonalEventDetailActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".events.presentation.activities.DailyEventActivity"
+            android:name=".lobby.activities.MatchConfigActivity"
             android:exported="true" />
-
         <activity
-            android:name=".events.presentation.activities.WheelActivity"
-            android:exported="true" />
-
-        <activity
-            android:name=".events.presentation.activities.LimitedEventDetailActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".events.presentation.activities.LimitedEventStageActivity"
+            android:name=".battles.activities.MatchResultActivity"
             android:exported="false" />
 
 
@@ -62,10 +41,22 @@
             android:exported="true" />
         <activity
             android:name=".users.activities.LoginActivity"
-            android:exported="true" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".tests.activities.TestActivity"
-            android:exported="true" />
+            android:exported="true" >
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+        </activity>
     </application>
 
 </manifest>
