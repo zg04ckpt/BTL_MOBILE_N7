@@ -10,8 +10,10 @@ import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.hoangcn.quizbattle.R;
+import com.hoangcn.quizbattle.home_rank.activities.HomeActivity;
 import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
+import com.hoangcn.quizbattle.shared.utils.SharedPreferenceUtil;
 import com.hoangcn.quizbattle.users.api.UserService;
 import com.hoangcn.quizbattle.users.models.LoginRequest;
 import com.hoangcn.quizbattle.users.models.LoginResponse;
@@ -62,11 +64,10 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onSuccess(ApiResponse<LoginResponse> data) {
                 runOnUiThread(() -> {
-                    btnLogin.setEnabled(true);
-                    btnLogin.setText("Đăng nhập");
                     Toast.makeText(LoginActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
+                    SharedPreferenceUtil.getInstance(LoginActivity.this).putInt("userId", data.getData().getId());
 
-                    Intent intent = new Intent(LoginActivity.this, ProfileActivity.class);
+                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                     finish();

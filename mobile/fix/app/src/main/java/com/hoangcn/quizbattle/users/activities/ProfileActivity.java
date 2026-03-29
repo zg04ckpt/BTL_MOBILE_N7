@@ -18,8 +18,9 @@ import com.hoangcn.quizbattle.battles.adapters.MatchHistoryAdapter;
 import com.hoangcn.quizbattle.battles.models.MatchHistory;
 import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
+import com.hoangcn.quizbattle.shared.utils.SharedPreferenceUtil;
 import com.hoangcn.quizbattle.users.api.UserService;
-import com.hoangcn.quizbattle.users.models.UserModel;
+import com.hoangcn.quizbattle.users.models.UserProfile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ public class ProfileActivity extends AppCompatActivity {
     private Button btnLogout;
     private Button btnEditProfile;
 
-    private UserModel currentUser;
+    private UserProfile currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,11 +64,23 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void logout() {
-        Toast.makeText(ProfileActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-        finish();
+        var api = new UserService(this);
+        api.logout(new ApiCallback<Void>() {
+            @Override
+            public void onSuccess(ApiResponse<Void> data) {
+                Toast.makeText(ProfileActivity.this, "Đăng xuất thành công", Toast.LENGTH_SHORT).show();
+                SharedPreferenceUtil.getInstance(ProfileActivity.this).remove("userId");
+                Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(ProfileActivity.this, "Đăng xuất thất bại: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void initData() {
@@ -123,12 +136,13 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void loadProfile() {
         var api = new UserService(this);
-        api.getProfile(new ApiCallback<UserModel>() {
+        api.getProfile(new ApiCallback<UserProfile>() {
             @Override
-            public void onSuccess(ApiResponse<UserModel> data) {
+            public void onSuccess(ApiResponse<UserProfile> data) {
                 if (data != null && data.getData() != null) {
-                    UserModel u = data.getData();
+                    UserProfile u = data.getData();
                     currentUser = u;
+                    currentUser.setAvatar(api.getFullImageUrl(currentUser.getAvatar()));
                     runOnUiThread(() -> bindProfile(u));
                 }
             }
@@ -142,7 +156,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    private void bindProfile(UserModel u) {
+    private void bindProfile(UserProfile u) {
         currentUser = u;
         // Choose best available name: displayName/name (already mapped) -> email -> placeholder
         String name = firstNonEmpty(u.getDisplayName(), u.getEmail(), "Người chơi");
@@ -160,23 +174,10 @@ public class ProfileActivity extends AppCompatActivity {
         String streak = u.getWinningStreak() != null ? String.valueOf(u.getWinningStreak()) : "0";
         setupStats(rank, matches, winRate, streak);
 
-        String avatarUrl = resolveAvatarUrl(u.getAvatar());
-        Glide.with(this).load(avatarUrl)
+        Glide.with(this).load(u.getAvatar())
                 .centerCrop()
                 .circleCrop()
                 .into(ivAvatar);
-//        if (avatarUrl != null) {
-//            new ImageLoadTask(avatarUrl, ivAvatar).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-//        } else {
-//            ivAvatar.setImageResource(R.drawable.opponent_avatar);
-//        }
-    }
-
-    private String resolveAvatarUrl(String raw) {
-        if (raw == null || raw.trim().isEmpty()) return null;
-        if (raw.startsWith("http")) return raw;
-        // Backend returns relative path like /uploads/xxx
-        return "https://quizbattle.hoangcn.com" + raw;
     }
 
     private String firstNonEmpty(String... values) {

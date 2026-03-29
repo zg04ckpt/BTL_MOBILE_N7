@@ -4,7 +4,7 @@ import com.hoangcn.quizbattle.shared.models.ApiResponse;
 import com.hoangcn.quizbattle.users.models.LoginRequest;
 import com.hoangcn.quizbattle.users.models.LoginResponse;
 import com.hoangcn.quizbattle.users.models.RegisterRequest;
-import com.hoangcn.quizbattle.users.models.UserModel;
+import com.hoangcn.quizbattle.users.models.UserProfile;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -12,7 +12,6 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
-import retrofit2.http.Header;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
@@ -29,10 +28,10 @@ public interface UserApi {
     Call<ApiResponse<Void>> logout();
 
     @GET("users/profile")
-    Call<ApiResponse<UserModel>> getProfile();
+    Call<ApiResponse<UserProfile>> getProfile();
 
     @Multipart
     @PUT("users/profile")
-    Call<ApiResponse<UserModel>> updateProfile(@Part("name") RequestBody name,
-                                               @Part MultipartBody.Part avatar);
+    Call<ApiResponse<UserProfile>> updateProfile(@Part("name") RequestBody name,
+                                                 @Part MultipartBody.Part avatar);
 }

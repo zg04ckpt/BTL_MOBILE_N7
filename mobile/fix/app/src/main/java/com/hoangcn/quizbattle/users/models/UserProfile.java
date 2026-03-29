@@ -2,11 +2,10 @@ package com.hoangcn.quizbattle.users.models;
 
 import com.google.gson.annotations.SerializedName;
 
-public class UserModel {
+public class UserProfile {
     @SerializedName("id")
-    private String id;
+    private int id;
 
-    // Map both "displayName" and "name" from backend into this field
     @SerializedName(value = "displayName", alternate = {"name"})
     private String displayName;
 
@@ -39,7 +38,7 @@ public class UserModel {
     @SerializedName(value = "numberOfMatches", alternate = {"numberOfMatchs"})
     private Integer numberOfMatches;
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
@@ -81,5 +80,9 @@ public class UserModel {
 
     public Integer getNumberOfMatches() {
         return numberOfMatches;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 }

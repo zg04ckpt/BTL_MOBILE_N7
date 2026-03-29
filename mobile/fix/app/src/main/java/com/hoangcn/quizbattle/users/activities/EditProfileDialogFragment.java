@@ -26,7 +26,7 @@ import com.hoangcn.quizbattle.R;
 import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
 import com.hoangcn.quizbattle.users.api.UserService;
-import com.hoangcn.quizbattle.users.models.UserModel;
+import com.hoangcn.quizbattle.users.models.UserProfile;
 
 import java.io.InputStream;
 
@@ -39,22 +39,37 @@ public class EditProfileDialogFragment extends DialogFragment {
     private ImageView ivAvatar;
     private EditText etName;
     private Button btnSave;
-    ImageView ivClose;
-    View tvChangeAvatar;
+    private ImageView ivClose;
+    private View tvChangeAvatar;
     private Uri selectedImageUri;
-    private ActivityResultLauncher<String> pickImageLauncher;
+    
+    // Khai báo launcher
+    private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedImageUri = uri;
+                    // GIỮ NGUYÊN background và padding để giữ border từ XML
+                    Glide.with(this)
+                            .load(uri)
+                            .centerCrop()
+                            .circleCrop()
+                            .into(ivAvatar);
+                }
+            }
+    );
 
     private ProfileUpdateListener updateListener;
-    private UserModel initialUser;
+    private UserProfile initialUser;
 
     public interface ProfileUpdateListener {
-        void onProfileUpdated(UserModel updatedUser);
+        void onProfileUpdated(UserProfile updatedUser);
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if (getDialog() != null & getDialog().getWindow() != null) {
+        if (getDialog() != null && getDialog().getWindow() != null) {
             getDialog().getWindow().setLayout(
                     (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -79,7 +94,7 @@ public class EditProfileDialogFragment extends DialogFragment {
     }
 
     private void initViews(View view) {
-        if (getDialog() != null & getDialog().getWindow() != null) {
+        if (getDialog() != null && getDialog().getWindow() != null) {
             getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
@@ -93,12 +108,6 @@ public class EditProfileDialogFragment extends DialogFragment {
     private void setListeners() {
         ivAvatar.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
         tvChangeAvatar.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
-        pickImageLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-            if (uri != null) {
-                selectedImageUri = uri;
-                ivAvatar.setImageURI(uri);
-            }
-        });
         ivClose.setOnClickListener(v -> dismiss());
         btnSave.setOnClickListener(v -> submitChanges());
     }
@@ -111,26 +120,26 @@ public class EditProfileDialogFragment extends DialogFragment {
         this.updateListener = listener;
     }
 
-    public void setInitialUser(UserModel user) {
+    public void setInitialUser(UserProfile user) {
         this.initialUser = user;
     }
 
     private void applyInitialUser() {
         if (initialUser == null) return;
+        
         if (initialUser.getDisplayName() != null) {
             etName.setText(initialUser.getDisplayName());
+        } else if (initialUser.getDisplayName() != null) {
+            etName.setText(initialUser.getDisplayName());
         }
-        String avatarUrl = resolveAvatarUrl(initialUser.getAvatar());
-        Glide.with(this).load(avatarUrl)
-                .centerCrop()
-                .circleCrop()
-                .into(ivAvatar);
-    }
-
-    private String resolveAvatarUrl(String raw) {
-        if (raw == null || raw.trim().isEmpty()) return null;
-        if (raw.startsWith("http")) return raw;
-        return "https://quizbattle.hoangcn.com" + raw;
+        
+        if (initialUser.getAvatar() != null) {
+            // GIỮ NGUYÊN background và padding để giữ border từ XML
+            Glide.with(this).load(initialUser.getAvatar())
+                    .centerCrop()
+                    .circleCrop()
+                    .into(ivAvatar);
+        }
     }
 
     private void submitChanges() {
@@ -147,9 +156,9 @@ public class EditProfileDialogFragment extends DialogFragment {
         MultipartBody.Part avatarPart = buildAvatarPart(ctx.getContentResolver());
 
         UserService api = new UserService(ctx);
-        api.updateProfile(namePart, avatarPart, new ApiCallback<UserModel>() {
+        api.updateProfile(namePart, avatarPart, new ApiCallback<UserProfile>() {
             @Override
-            public void onSuccess(ApiResponse<UserModel> data) {
+            public void onSuccess(ApiResponse<UserProfile> data) {
                 if (getActivity() == null) return;
                 getActivity().runOnUiThread(() -> {
                     Toast.makeText(getActivity(), "Cập nhật thành công", Toast.LENGTH_SHORT).show();
@@ -177,10 +186,9 @@ public class EditProfileDialogFragment extends DialogFragment {
             if (mime == null) mime = "image/*";
 
             InputStream is = resolver.openInputStream(selectedImageUri);
-
             byte[] bytes = getBytes(is);
-
             is.close();
+            
             RequestBody body = RequestBody.create(MediaType.parse(mime), bytes);
             return MultipartBody.Part.createFormData("avatar", "avatar.jpg", body);
         } catch (Exception e) {

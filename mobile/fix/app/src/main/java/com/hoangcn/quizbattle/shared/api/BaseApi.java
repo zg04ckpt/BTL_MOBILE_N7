@@ -12,6 +12,11 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
 import com.hoangcn.quizbattle.users.activities.LoginActivity;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -21,6 +26,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public abstract class BaseApi {
     private static final String TAG = "BaseApi";
+    private final String BASE_API_URL = "https://quizbattle.hoangcn.com/api/";
+    private final String BASE_IMAGE_URL = "https://quizbattle.hoangcn.com";
     private static Retrofit retrofit;
 
     public BaseApi(Context context) {
@@ -41,12 +48,16 @@ public abstract class BaseApi {
                 .build();
 
             retrofit = new Retrofit.Builder()
-                .baseUrl("https://quizbattle.hoangcn.com/api/")
+                .baseUrl(BASE_API_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         }
         return retrofit;
+    }
+
+    public String getFullImageUrl(String relativeUrl) {
+        return BASE_IMAGE_URL + relativeUrl;
     }
 
     protected <T> void enqueue(Call<ApiResponse<T>> callApi, ApiCallback<T> callback) {
@@ -63,7 +74,12 @@ public abstract class BaseApi {
                         return;
                     }
 
-                    callback.onError(buildHttpError(response));
+                    try {
+                        var data = new JSONObject(response.errorBody().string());
+                        callback.onError(data.getString("message"));
+                    } catch (JSONException | IOException e) {
+                        callback.onError(buildHttpError(response));
+                    }
                     return;
                 }
 

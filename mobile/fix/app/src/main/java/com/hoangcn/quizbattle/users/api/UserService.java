@@ -8,7 +8,7 @@ import com.hoangcn.quizbattle.shared.models.ApiResponse;
 import com.hoangcn.quizbattle.users.models.LoginRequest;
 import com.hoangcn.quizbattle.users.models.LoginResponse;
 import com.hoangcn.quizbattle.users.models.RegisterRequest;
-import com.hoangcn.quizbattle.users.models.UserModel;
+import com.hoangcn.quizbattle.users.models.UserProfile;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -34,15 +34,16 @@ public class UserService extends BaseApi {
 
     public void logout(ApiCallback<Void> callback) {
         Call<ApiResponse<Void>> call = api.logout();
-    }
-
-    public void getProfile(ApiCallback<UserModel> callback) {
-        Call<ApiResponse<UserModel>> call = api.getProfile();
         enqueue(call, callback);
     }
 
-    public void updateProfile(RequestBody name, MultipartBody.Part avatar, ApiCallback<UserModel> callback) {
-        Call<ApiResponse<UserModel>> call = api.updateProfile(name, avatar);
+    public void getProfile(ApiCallback<UserProfile> callback) {
+        Call<ApiResponse<UserProfile>> call = api.getProfile();
+        enqueue(call, callback);
+    }
+
+    public void updateProfile(RequestBody name, MultipartBody.Part avatar, ApiCallback<UserProfile> callback) {
+        Call<ApiResponse<UserProfile>> call = api.updateProfile(name, avatar);
         enqueue(call, callback);
     }
 }
