@@ -13,6 +13,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.hoangcn.quizbattle.R;
+import com.hoangcn.quizbattle.events.activities.EventActivity;
 import com.hoangcn.quizbattle.home_rank.adapters.HomeEventAdapter;
 import com.hoangcn.quizbattle.home_rank.api.HomeRankService;
 import com.hoangcn.quizbattle.home_rank.models.UserProfile;
@@ -50,10 +51,16 @@ public class HomeActivity extends AppCompatActivity {
 
         initViews();
         setListeners();
-        initData();
+        loadData();
     }
 
-    private void initData() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadData();
+    }
+
+    private void loadData() {
         getUserStats();
         getListEvents();
     }
@@ -82,7 +89,7 @@ public class HomeActivity extends AppCompatActivity {
     private void renderListEvents(List<OngoingEvent> data) {
         var adapter = new HomeEventAdapter(data);
         adapter.setOnItemClickedListener(event -> {
-
+            startActivity(new Intent(this, EventActivity.class));
         });
         vpEvents.setAdapter(adapter);
     }
@@ -167,6 +174,9 @@ public class HomeActivity extends AppCompatActivity {
 //        findViewById(R.id.tv_start_game).setOnClickListener(v -> onStartGameClick());
 //        findViewById(R.id.iv_event_image).setOnClickListener(v -> onEventBannerClick());
 //        findViewById(R.id.card_event_banner).setOnClickListener(v -> onEventBannerClick());
+        findViewById(R.id.tvViewAllEvents).setOnClickListener(l -> {
+            startActivity(new Intent(this, EventActivity.class));
+        });
     }
 
     private void setupBottomNavigation() {

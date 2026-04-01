@@ -15,8 +15,18 @@ public class UserRankListItem {
     @SerializedName("rankScore")
     private int rankScore;
 
+    private int level;
+
     @SerializedName("rank")
     private int rank;
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
 
     public int getUserId() {
         return userId;

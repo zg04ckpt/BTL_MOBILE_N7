@@ -13,59 +13,51 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.QuizBattle">
-
         <activity
-            android:name=".MainActivity"
+            android:name=".events.activities.LuckySpinEventActivity"
+            android:exported="false" />
+        <activity
+            android:name=".home_rank.activities.HomeActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
-            android:name=".home_rank.activities.HomeActivity"
+            android:name=".MainActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:theme="@style/Theme.QuizBattle"/>
-
+            android:theme="@style/Theme.QuizBattle" />
         <activity
             android:name=".users.activities.RegisterActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".users.activities.LoginActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".users.activities.ProfileActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".battles.activities.WaitResultActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".battles.activities.MatchResultActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".home_rank.activities.RankingActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".lobby.activities.MatchConfigActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".lobby.activities.MatchMakingActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
         <activity
             android:name=".events.activities.EventActivity"
-            android:exported="false"/>
-
+            android:exported="false" />
     </application>
 
 </manifest>

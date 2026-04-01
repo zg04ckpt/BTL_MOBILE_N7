@@ -5,9 +5,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".events.presentation.activities.WheelActivity">
+    tools:context=".events.activities.WheelActivity">
 
-    <com.n7.quizbattle.events.presentation.view.LuckyWheelView
+    <com.hoangcn.quizbattle.events.views.LuckyWheelView
         android:id="@+id/luckyWheelView"
         android:layout_width="300dp"
         android:layout_height="300dp"

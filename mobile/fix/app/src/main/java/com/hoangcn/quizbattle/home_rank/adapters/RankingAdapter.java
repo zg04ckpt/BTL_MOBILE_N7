@@ -50,6 +50,7 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.ViewHold
         private final TextView tvRank;
         private final TextView tvUserName;
         private final TextView tvScore;
+        private final TextView tvLevel;
         private final ImageView ivAvatar;
 
         public ViewHolder(@NonNull View itemView) {
@@ -58,6 +59,7 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.ViewHold
             tvUserName = itemView.findViewById(R.id.tvUserName);
             tvScore = itemView.findViewById(R.id.tvScore);
             ivAvatar = itemView.findViewById(R.id.ivAvatar);
+            tvLevel = itemView.findViewById(R.id.tvLevel);
         }
 
         public void bind(UserRankListItem item) {
@@ -74,6 +76,7 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.ViewHold
                     listener.onUserRankClicked(item);
                 }
             });
+            tvLevel.setText("lv" + item.getLevel());
         }
     }
 }
