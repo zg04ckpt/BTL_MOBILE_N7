@@ -17,16 +17,13 @@ import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
 
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
 
 public class EventActivity extends AppCompatActivity {
     private List<EventModel> events = new ArrayList<>();
-    private HashMap<Integer, EventProgressModel> progresses = new HashMap<>();
     private EventService service;
-
     private EventAdapter adapter;
     private RecyclerView rvEvents;
     private Button btnBack;
@@ -70,27 +67,6 @@ public class EventActivity extends AppCompatActivity {
                     });
                 }
             });
-
-            // Get progress
-            service.getAllMyProgress(new ApiCallback<List<EventProgressModel>>() {
-                @Override
-                public void onSuccess(ApiResponse<List<EventProgressModel>> data) {
-                    data.getData().forEach(p -> {
-                        progresses.put(p.getEventId(), p);
-                    });
-                }
-
-                @Override
-                public void onError(String message) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(
-                                EventActivity.this,
-                                "Tải dữ liệu tiến trình sự kiện thất bại: " + message,
-                                Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-
         });
 
     }
@@ -99,11 +75,24 @@ public class EventActivity extends AppCompatActivity {
         btnBack.setOnClickListener(l -> finish());
         adapter.setOnItemClickListener(event -> {
             if (event.getType().equals("LuckySpin")) {
-                EventProgressModel progress = progresses.get(event.getId());
                 Intent intent = new Intent(EventActivity.this, LuckySpinEventActivity.class);
                 intent.putExtra(LuckySpinEventActivity.KEY_EVENT, event);
-                intent.putExtra(LuckySpinEventActivity.KEY_PROGRESS, progress);
                 startActivity(intent);
+                return;
+            }
+
+            if (event.getType().equals("QuizMilestoneChallenge")) {
+                Intent intent = new Intent(EventActivity.this, QuizMilestoneChallengeActivity.class);
+                intent.putExtra(QuizMilestoneChallengeActivity.KEY_EVENT, event);
+                startActivity(intent);
+                return;
+            }
+
+            if (event.getType().equals("TournamentRewards")) {
+                Intent intent = new Intent(EventActivity.this, QuizMilestoneChallengeActivity.class);
+                intent.putExtra(QuizMilestoneChallengeActivity.KEY_EVENT, event);
+                startActivity(intent);
+                return;
             }
         });
     }

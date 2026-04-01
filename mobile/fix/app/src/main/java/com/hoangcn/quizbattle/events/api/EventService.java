@@ -2,6 +2,7 @@ package com.hoangcn.quizbattle.events.api;
 
 import android.content.Context;
 
+import com.hoangcn.quizbattle.events.models.ClaimRewardRequest;
 import com.hoangcn.quizbattle.events.models.EventModel;
 import com.hoangcn.quizbattle.events.models.EventProgressModel;
 import com.hoangcn.quizbattle.events.models.RewardModel;
@@ -24,8 +25,8 @@ public class EventService extends BaseApi {
         enqueue(request, callback);
     }
 
-    public void getAllMyProgress(ApiCallback<List<EventProgressModel>> callback) {
-        var request = this.api.getAllMyProgress();
+    public void getProgress(int eventId, ApiCallback<EventProgressModel> callback) {
+        var request = this.api.getMyProgress(eventId);
         enqueue(request, callback);
     }
 
@@ -36,6 +37,11 @@ public class EventService extends BaseApi {
 
     public void getWinSpinItem(int eventId, ApiCallback<WinSpinItemModel> callback) {
         var request = this.api.getWinSpinItem(eventId);
+        enqueue(request, callback);
+    }
+
+    public void claimReward(ClaimRewardRequest claimRewardRequest, ApiCallback<EventProgressModel> callback) {
+        var request = this.api.claimReward(claimRewardRequest);
         enqueue(request, callback);
     }
 }

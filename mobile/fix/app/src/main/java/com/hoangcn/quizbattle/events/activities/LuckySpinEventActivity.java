@@ -31,9 +31,8 @@ import java.util.stream.Collectors;
 
 public class LuckySpinEventActivity extends AppCompatActivity {
     public static final String KEY_EVENT = "lucky_spin_event_data";
-    public static final String KEY_PROGRESS = "lucky_spin_event_progress";
 
-    public EventService eventService;
+    private EventService eventService;
 
     private EventModel event;
     private int remainingSpinTime = 0;
@@ -84,21 +83,16 @@ public class LuckySpinEventActivity extends AppCompatActivity {
 
     private void loadProgress() {
         Executors.newSingleThreadExecutor().execute(() -> {
-            eventService.getAllMyProgress(new ApiCallback<List<EventProgressModel>>() {
+            eventService.getProgress(event.getId(), new ApiCallback<EventProgressModel>() {
                 @Override
-                public void onSuccess(ApiResponse<List<EventProgressModel>> data) {
-                    var luckySpinProgress = data.getData().stream().filter(p -> p.getEventId() == event.getId()).findFirst();
-                    if (luckySpinProgress.isPresent()) {
-                        remainingSpinTime = event.getMaxSpinTimePerDay() - luckySpinProgress.get().getTodaySpinTime();
-                    } else {
-                        remainingSpinTime = event.getMaxSpinTimePerDay();
-                    }
+                public void onSuccess(ApiResponse<EventProgressModel> data) {
+                    remainingSpinTime = event.getMaxSpinTimePerDay() - data.getData().getTodaySpinTime();
                     renderSpinInfo();
                 }
 
                 @Override
                 public void onError(String message) {
-
+                    remainingSpinTime = event.getMaxSpinTimePerDay();
                 }
             });
         });
