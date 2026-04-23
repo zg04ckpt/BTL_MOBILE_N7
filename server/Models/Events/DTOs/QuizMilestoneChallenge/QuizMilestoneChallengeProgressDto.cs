@@ -1,16 +1,14 @@
-﻿using Models.Events.Entities;
-using System.Text.Json;
-
-namespace Models.Events.DTOs.QuizMilestoneChallenge
+﻿namespace Models.Events.DTOs.QuizMilestoneChallenge
 {
     public class QuizMilestoneChallengeProgressDto : UserInEventProgressDto
     {
-        public QuizMilestoneChallengeProgressInfoDto Info { get; set; }
+        public List<QuizMilestoneChallengeProgressInfoDto> ThresholdProgresses { get; set; } = new();
     }
 
     public class QuizMilestoneChallengeProgressInfoDto
     {
-        public int CompletedQuestions { get; set; }
-        public List<int> RewardClaimedThresholdIds { get; set; }
+        public int ThresholdId { get; set; }
+        public bool RewardClaimed { get; set; }
+        public bool Completed { get; set; }
     }
 }

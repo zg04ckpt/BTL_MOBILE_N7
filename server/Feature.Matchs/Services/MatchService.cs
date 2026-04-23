@@ -11,22 +11,29 @@ using Models.Matchs.Entities;
 using Models.Matchs.Enums;
 using Models.Matchs.Realtimes;
 using Models.Matchs.Requests;
+using Models.Events.Entities;
+using Models.Events.Enums;
 using Models.Quizzes.DTOs;
 using Models.Quizzes.Entities;
 using Models.Quizzes.Enums;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Threading;
 
 namespace Feature.Matchs.Services
 {
     public class MatchService : IMatchService
     {
+        private const string FinalizeOnceKey = "__finalize_once__";
+        private static int _isRealtimeAnswerSubscribed;
         private readonly ILogService<MatchService> _logger;
         private readonly IMatchRealtimeService _matchRealtimeService;
         private readonly ISettingsService _settingsService;
         private readonly IUnitOfWork _uow;
         private readonly IServiceScopeFactory _scopeFactory;
         private static readonly ConcurrentDictionary<string, MatchRoomMappingDto> _matchs = new();
+        private static readonly ConcurrentDictionary<int, MatchReviewDto> _reviewSnapshots = new();
+        private static readonly ConcurrentDictionary<int, MatchRoomMappingDto> _endedRoomSnapshots = new();
 
         public MatchService(
             ILogService<MatchService> logger,
@@ -40,6 +47,11 @@ namespace Feature.Matchs.Services
             _matchRealtimeService = matchRealtimeService;
             _settingsService = settingsService;
             _scopeFactory = scopeFactory;
+
+            if (Interlocked.Exchange(ref _isRealtimeAnswerSubscribed, 1) == 0)
+            {
+                _matchRealtimeService.OnPlayerPickAnswer += HandlePlayerPickAnswers;
+            }
         }
 
         public async Task<ChangedResponse> DeleteMatchAsync(int matchId)
@@ -145,13 +157,17 @@ namespace Feature.Matchs.Services
                 roomInfo.ContentType,
                 roomInfo.TopicId,
                 settings.QuestionsPerMatch);
+            if (questions.Count < settings.QuestionsPerMatch)
+            {
+                throw new BadRequestException("Question pool is insufficient for this match configuration");
+            }
 
             // Create new match info
             var match = new Match
             {
                 MaxSecondPerQuestion = settings.QuestionTimeLimit,
                 CreatedAt = DateTime.UtcNow,
-                BattleType = roomInfo.MaxPlayers == 1 ? BattleType.Single : BattleType.Team,
+                BattleType = roomInfo.BattleType,
                 NumberOfPlayers = roomInfo.MaxPlayers,
                 ScorePerCorrectAnswer = 20,
                 Status = MatchStatus.InProgress,
@@ -173,18 +189,21 @@ namespace Feature.Matchs.Services
                 }).ToList(),
             };
 
+            await _uow.Repository<Match>().AddAsync(match);
+            await _uow.SaveChangesAsync();
+
             // Handle for realtime tracking
             string trackingId;
             try
             {
-                trackingId = MapMatchRoomForTracking(questions, players, match);
+                trackingId = MapMatchRoomForTracking(questions, players, match, isSolo: false);
                 var startRoomResult = await _matchRealtimeService.AddNewMatchRoomAsync(trackingId, players, match);
                 if (!startRoomResult)
                 {
                     _matchs.TryRemove(trackingId, out _);
                     throw new ServerErrorException("Failed to start new match room");
                 }
-                _matchRealtimeService.OnPlayerPickAnswer += HandlePlayerPickAnswers;
+                _ = WatchMatchTimeoutAsync(trackingId, settings.QuestionTimeLimit * settings.QuestionsPerMatch);
             }
             catch (ServerErrorException)
             {
@@ -193,20 +212,143 @@ namespace Feature.Matchs.Services
             catch (Exception ex)
             {
                 _logger.LogError($"StartMatchAsync: Failed to initialize realtime room - {ex.Message}");
+                await _uow.Repository<Match>().DeleteAsync(match);
+                await _uow.SaveChangesAsync();
                 throw new ServerErrorException("Failed to initialize realtime match room");
             }
+        }
+
+        public async Task<StartMatchInfoDto> StartSoloMatchAsync(int userId, StartSoloMatchRequest request)
+        {
+            if (request.FixedQuestionIds != null && request.FixedQuestionIds.Count > 0)
+            {
+                request.ContentType = MatchContentType.OnlyOne;
+            }
+
+            var user = await _uow.Repository<Feature.Users.Entities.User>().GetFirstAsync(u => u.Id == userId)
+                ?? throw new NotFoundException("User not found");
+
+            var settings = await _settingsService.GetAllSettingsAsync();
+            List<Question> questions;
+            if (request.FixedQuestionIds != null && request.FixedQuestionIds.Count > 0)
+            {
+                questions = (await _uow.Repository<Question>().GetAllAsync(
+                    predicate: q => request.FixedQuestionIds.Contains(q.Id),
+                    includes: q => q.Topic)).ToList();
+
+                if (questions.Count != request.FixedQuestionIds.Distinct().Count())
+                {
+                    throw new BadRequestException("Some fixed question ids are invalid");
+                }
+
+                questions = request.FixedQuestionIds
+                    .Distinct()
+                    .Select(id => questions.First(q => q.Id == id))
+                    .ToList();
+            }
+            else
+            {
+                questions = await MakeQuestionSetForQuizBattleMatch(
+                    request.ContentType,
+                    request.TopicId,
+                    settings.QuestionsPerMatch);
+            }
+
+            var match = new Match
+            {
+                MaxSecondPerQuestion = settings.QuestionTimeLimit,
+                CreatedAt = DateTime.UtcNow,
+                BattleType = BattleType.Single,
+                NumberOfPlayers = 1,
+                ScorePerCorrectAnswer = 20,
+                Status = MatchStatus.InProgress,
+                ContentType = request.ContentType,
+                TopicId = request.ContentType == MatchContentType.OnlyOne ? request.TopicId : null,
+                Questions = questions.Select(q => new QuestionInMatch
+                {
+                    QuestionId = q.Id,
+                    CorrectRate = 0
+                }).ToList(),
+                Users = new List<UserMatchResultHistory>
+                {
+                    new UserMatchResultHistory
+                    {
+                        UserId = userId,
+                        Status = UserInMatchStatus.InMatch,
+                        Score = 0,
+                        Correct = 0,
+                        Duration = 0,
+                        Progress = 0
+                    }
+                }
+            };
 
             await _uow.Repository<Match>().AddAsync(match);
             await _uow.SaveChangesAsync();
+
+            var trackingId = MapMatchRoomForTracking(
+                questions,
+                new List<PlayerInLobbyInfoDto>
+                {
+                    new PlayerInLobbyInfoDto
+                    {
+                        UserId = user.Id,
+                        AvatarUrl = user.AvatarUrl,
+                        DisplayName = user.Name,
+                        Level = user.Level
+                    }
+                },
+                match,
+                isSolo: true);
+
+            _ = WatchMatchTimeoutAsync(trackingId, settings.QuestionTimeLimit * Math.Max(1, questions.Count));
+            return await GetMatchInfoAsync(userId);
         }
 
         public async Task<StartMatchInfoDto> GetMatchInfoAsync(int userId)
         {
-            var match = _matchs.FirstOrDefault(kvp => kvp.Value.Users.ContainsKey(userId));
+            KeyValuePair<string, MatchRoomMappingDto> match = default;
+            for (var retry = 0; retry < 10; retry++)
+            {
+                match = _matchs.FirstOrDefault(kvp => kvp.Value.Users.ContainsKey(userId));
+                if (!match.Equals(default(KeyValuePair<string, MatchRoomMappingDto>)))
+                {
+                    break;
+                }
+
+                await Task.Delay(250);
+            }
+
             if (match.Equals(default(KeyValuePair<string, MatchRoomMappingDto>)))
             {
                 throw new NotFoundException("Match does not exist");
             }
+            return await BuildStartMatchInfoAsync(match);
+        }
+
+        public async Task<StartMatchInfoDto> GetMatchInfoByTrackingAsync(int userId, string trackingId)
+        {
+            if (string.IsNullOrWhiteSpace(trackingId))
+            {
+                throw new BadRequestException("TrackingId is required");
+            }
+
+            if (!_matchs.TryGetValue(trackingId, out var room))
+            {
+                throw new NotFoundException("Match does not exist");
+            }
+
+            if (!room.Users.ContainsKey(userId))
+            {
+                throw new ForbiddenException("User is not in this match");
+            }
+
+            var pair = new KeyValuePair<string, MatchRoomMappingDto>(trackingId, room);
+            return await BuildStartMatchInfoAsync(pair);
+        }
+
+        private async Task<StartMatchInfoDto> BuildStartMatchInfoAsync(KeyValuePair<string, MatchRoomMappingDto> match)
+        {
             var questionIds = match.Value.Questions.Values.Select(q => q.QuestionId);
             var questions = await _uow.Repository<Question>().GetAllAsync(
                 predicate: e => questionIds.Contains(e.Id),
@@ -214,7 +356,9 @@ namespace Feature.Matchs.Services
 
             return new StartMatchInfoDto
             {
+                MatchId = match.Value.MatchId,
                 TrackingId = match.Key,
+                IsSolo = match.Value.IsSolo,
                 MaxSecondPerQuestions = match.Value.MaxSecondPerQuestion,
                 Questions = questions.Select(e => new MatchQuestionContentDto
                 {
@@ -224,66 +368,276 @@ namespace Feature.Matchs.Services
                     VideoUrl = e.VideoUrl,
                     Level = e.Level,
                     StringAnswers = JsonSerializer.Deserialize<AnswersDto>(e.AnswerJsonData)!.StringAnswers,
+                    CorrectAnswers = match.Value.Questions.TryGetValue(e.Id, out var questionMap)
+                        ? questionMap.Answers
+                        : new List<string>(),
                     StringContent = e.StringContent,
                     TopicName = e.Topic.Name
                 }).ToList(),
             };
         }
 
-        private async void HandlePlayerPickAnswers(object? sender, (string trackingId, List<MatchPlayerAnswerDto> answers) e)
+        public async Task<MatchStateDto> GetMatchStateAsync(int userId)
+        {
+            var currentMatch = _matchs.FirstOrDefault(kvp => kvp.Value.Users.ContainsKey(userId));
+            if (!currentMatch.Equals(default(KeyValuePair<string, MatchRoomMappingDto>)))
+            {
+                var room = currentMatch.Value;
+                var users = room.Users.Values
+                    .OrderByDescending(u => u.Score)
+                    .ThenByDescending(u => u.Progress)
+                    .ThenBy(u => u.UserId)
+                    .Select((u, idx) => new MatchProgressUserDto
+                    {
+                        UserId = u.UserId,
+                        DisplayName = u.DisplayName,
+                        AvatarUrl = u.AvatarUrl,
+                        Score = u.Score,
+                        Progress = u.Progress,
+                        Rank = idx + 1,
+                        IsFinished = u.IsFinished
+                    }).ToList();
+
+                return new MatchStateDto
+                {
+                    MatchId = room.MatchId,
+                    TrackingId = currentMatch.Key,
+                    IsEnded = false,
+                    TotalQuestions = room.Questions.Count,
+                    Users = users
+                };
+            }
+
+            var endedMatches = await _uow.Repository<Match>().GetAllAsync(
+                predicate: m => m.Status == MatchStatus.Ended && m.Users.Any(u => u.UserId == userId),
+                orderBy: nameof(Match.EndedAt),
+                asc: false,
+                pageIndex: 1,
+                pageSize: 1);
+            var endedMatch = endedMatches.FirstOrDefault();
+
+            if (endedMatch == null)
+            {
+                throw new NotFoundException("No in-progress or ended match found");
+            }
+
+            return new MatchStateDto
+            {
+                MatchId = endedMatch.Id,
+                TrackingId = null,
+                IsEnded = true,
+                TotalQuestions = 0,
+                Users = new()
+            };
+        }
+
+        public async Task SubmitMatchAnswerAsync(int userId, SubmitMatchAnswerRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.TrackingId))
+            {
+                throw new BadRequestException("TrackingId is required");
+            }
+
+            if (!_matchs.TryGetValue(request.TrackingId, out var room))
+            {
+                throw new NotFoundException("Match room not found");
+            }
+
+            if (!room.Users.ContainsKey(userId))
+            {
+                throw new BadRequestException("User is not in this match");
+            }
+
+            if (!room.Questions.ContainsKey(request.QuestionId))
+            {
+                throw new BadRequestException("Question does not belong to this match");
+            }
+
+            if (room.IsSolo)
+            {
+                await ProcessAnswersForRoomAsync(request.TrackingId, room, new List<MatchPlayerAnswerDto>
+                {
+                    new MatchPlayerAnswerDto
+                    {
+                        UserId = userId,
+                        QuestionId = request.QuestionId,
+                        Answer = request.Answers ?? new List<string>()
+                    }
+                });
+            }
+            else
+            {
+                var ok = await _matchRealtimeService.AddPlayerAnswerAsync(request.TrackingId, new MatchPlayerAnswerDto
+                {
+                    UserId = userId,
+                    QuestionId = request.QuestionId,
+                    Answer = request.Answers ?? new List<string>()
+                });
+
+                if (!ok)
+                {
+                    throw new ServerErrorException("Failed to submit answer");
+                }
+            }
+        }
+
+        public async Task<MatchLoudspeakerInventoryDto> GetMyLoudspeakerInventoryAsync(int userId)
+        {
+            var claimed = await _uow.Repository<EventReward>().GetFirstAsync(
+                predicate: r => r.Type == EventRewardType.MatchLoudspeaker,
+                selector: r => r.ClaimedRewards
+                    .Where(cr => cr.UserId == userId)
+                    .Select(cr => cr.Value)
+                    .FirstOrDefault());
+
+            return new MatchLoudspeakerInventoryDto
+            {
+                Count = Math.Max(0, claimed)
+            };
+        }
+
+        public async Task<MatchLoudspeakerInventoryDto> UseLoudspeakerAsync(int userId, UseMatchLoudspeakerRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.TrackingId))
+            {
+                throw new BadRequestException("TrackingId is required");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Message))
+            {
+                throw new BadRequestException("Message is required");
+            }
+
+            if (!_matchs.TryGetValue(request.TrackingId, out var room))
+            {
+                throw new NotFoundException("Match room not found");
+            }
+
+            if (!room.Users.ContainsKey(userId))
+            {
+                throw new BadRequestException("User is not in this match");
+            }
+
+            var reward = await _uow.Repository<EventReward>().GetFirstAsync(
+                predicate: r => r.Type == EventRewardType.MatchLoudspeaker,
+                includes: r => r.ClaimedRewards);
+
+            var claimed = reward?.ClaimedRewards?.FirstOrDefault(cr => cr.UserId == userId);
+            if (claimed == null || claimed.Value <= 0)
+            {
+                throw new BadRequestException("No loudspeaker remaining");
+            }
+
+            claimed.Value--;
+            await _uow.Repository<EventReward>().UpdateAsync(reward!);
+            await _uow.SaveChangesAsync();
+
+            await _matchRealtimeService.AppendMatchEventAsync(
+                request.TrackingId,
+                new MatchRealtimeEventDto
+                {
+                    Type = MatchRealtimeEventTypes.LoudspeakerUsed,
+                    Message = request.Message.Trim(),
+                    ActorUserId = userId
+                },
+                $"Người chơi {userId} đã dùng loa");
+
+            return new MatchLoudspeakerInventoryDto
+            {
+                Count = claimed.Value
+            };
+        }
+
+        private void HandlePlayerPickAnswers(object? sender, (string trackingId, List<MatchPlayerAnswerDto> answers) e)
+        {
+            _ = HandlePlayerPickAnswersAsync(e.trackingId, e.answers);
+        }
+
+        private async Task HandlePlayerPickAnswersAsync(string trackingId, List<MatchPlayerAnswerDto> answers)
         {
             try
             {
-                if (!_matchs.TryGetValue(e.trackingId, out var room))
+                if (!_matchs.TryGetValue(trackingId, out var room))
                 {
-                    _logger.LogError($"HandlePlayerPickAnswers: tracking room {e.trackingId} not found");
+                    _logger.LogError($"HandlePlayerPickAnswers: tracking room {trackingId} not found");
                     return;
                 }
-
-                var updatedUsers = new List<UserMappingDto>();
-
-                foreach (var answer in e.answers)
-                {
-                    if (!room.Users.TryGetValue(answer.UserId, out var user))
-                        continue;
-
-                    if (!room.Questions.TryGetValue(answer.QuestionId, out var question))
-                        continue;
-
-                    // Check if the answer is correct (order-insensitive comparison)
-                    bool isCorrect = answer.Answer != null
-                        && question.Answers != null
-                        && answer.Answer.Count == question.Answers.Count
-                        && !answer.Answer.Except(question.Answers, StringComparer.OrdinalIgnoreCase).Any();
-
-                    if (isCorrect)
-                    {
-                        user.Score += room.ScorePerQuestions;
-                    }
-
-                    user.Progress++;
-                    updatedUsers.Add(user);
-                }
-
-                if (updatedUsers.Count > 0)
-                {
-                    _logger.LogInfo($"HandlePlayerPickAnswers: updating leaderboard for match {e.trackingId}, " +
-                        $"{updatedUsers.Count} player(s) answered");
-                    await _matchRealtimeService.UpdateLeaderboardAsync(e.trackingId, updatedUsers);
-                }
-
-                // Check if all players have completed all questions
-                bool allDone = room.Users.Values.All(u => u.Progress >= room.Questions.Count);
-                if (allDone)
-                {
-                    _matchRealtimeService.OnPlayerPickAnswer -= HandlePlayerPickAnswers;
-                    await FinalizeMatchAsync(e.trackingId, room);
-                }
+                await ProcessAnswersForRoomAsync(trackingId, room, answers);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"HandlePlayerPickAnswers: Unhandled error on match {e.trackingId} - {ex.Message}");
-                _matchRealtimeService.OnPlayerPickAnswer -= HandlePlayerPickAnswers;
+                _logger.LogError($"HandlePlayerPickAnswers: Unhandled error on match {trackingId} - {ex.Message}");
+            }
+        }
+
+        private async Task ProcessAnswersForRoomAsync(string trackingId, MatchRoomMappingDto room, List<MatchPlayerAnswerDto> answers)
+        {
+            var updatedUsers = new List<UserMappingDto>();
+
+            foreach (var answer in answers)
+            {
+                if (!room.Users.TryGetValue(answer.UserId, out var user))
+                    continue;
+
+                if (user.IsFinished)
+                    continue;
+
+                if (!room.Questions.TryGetValue(answer.QuestionId, out var question))
+                    continue;
+
+                var answerKey = $"{answer.UserId}:{answer.QuestionId}";
+                if (!room.ProcessedAnswerKeys.TryAdd(answerKey, true))
+                {
+                    _logger.LogInfo($"HandlePlayerPickAnswers: duplicate answer ignored {answerKey} in match {trackingId}");
+                    continue;
+                }
+
+                bool isCorrect = answer.Answer != null
+                    && question.Answers != null
+                    && answer.Answer.Count == question.Answers.Count
+                    && !answer.Answer.Except(question.Answers, StringComparer.OrdinalIgnoreCase).Any();
+
+                user.Answers[answer.QuestionId] = new UserQuestionAnswerMappingDto
+                {
+                    QuestionId = answer.QuestionId,
+                    Answers = answer.Answer ?? new List<string>(),
+                    IsCorrect = isCorrect
+                };
+
+                if (isCorrect)
+                {
+                    user.Score += room.ScorePerQuestions;
+                }
+
+                user.Progress++;
+                if (user.Progress >= room.Questions.Count && !user.IsFinished)
+                {
+                    user.IsFinished = true;
+                    user.FinishedAtUtc = DateTime.UtcNow;
+                    if (!room.IsSolo)
+                    {
+                        _ = _matchRealtimeService.AppendMatchEventAsync(
+                            trackingId,
+                            new MatchRealtimeEventDto
+                            {
+                                Type = MatchRealtimeEventTypes.PlayerFinished,
+                                Message = $"User {user.UserId} finished all questions"
+                            },
+                            $"Người chơi {user.UserId} đã hoàn thành toàn bộ câu hỏi");
+                    }
+                }
+                updatedUsers.Add(user);
+            }
+
+            if (!room.IsSolo && updatedUsers.Count > 0)
+            {
+                await _matchRealtimeService.UpdateLeaderboardAsync(trackingId, updatedUsers);
+            }
+
+            bool allDone = room.Users.Values.All(u => u.Progress >= room.Questions.Count);
+            if (allDone)
+            {
+                await TryFinalizeMatchAsync(trackingId, room);
             }
         }
 
@@ -303,21 +657,30 @@ namespace Feature.Matchs.Services
                 return;
             }
 
-            // Sort in-memory users by score descending to assign ranks
+            var finalizedAt = DateTime.UtcNow;
+
+            // Sort by score desc, then duration asc (faster wins tie), then userId for deterministic ordering
             var ranked = room.Users.Values
                 .OrderByDescending(u => u.Score)
+                .ThenBy(u => u.FinishedAtUtc ?? finalizedAt)
+                .ThenBy(u => u.UserId)
                 .ToList();
 
             // Score formulas:
             // ExpGained      : base 50 XP + 10 per correct answer
             // RankScoreGained: winner +BaseWinPoints, others -BaseLosePoints
-            var settings = await GetRuntimeSettingsAsync();
+            var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+            var settings = await settingsService.GetAllSettingsAsync();
             int rank = 1;
             foreach (var userMapping in ranked)
             {
                 int correctAnswers = userMapping.Score / (room.ScorePerQuestions > 0 ? room.ScorePerQuestions : 1);
                 int expGained = 50 + correctAnswers * 10;
-                int rankScoreGained = rank == 1 ? settings.BaseWinPoints : -settings.BaseLosePoints;
+                int rankScoreGained = (match.BattleType == BattleType.Single && match.NumberOfPlayers == 1)
+                    ? 0
+                    : (rank == 1 ? settings.BaseWinPoints : -settings.BaseLosePoints);
+                var finishedAt = userMapping.FinishedAtUtc ?? finalizedAt;
+                var duration = (decimal)(finishedAt - room.MatchStartedAtUtc).TotalSeconds;
 
                 _logger.LogInfo(
                     $"FinalizeMatchAsync [{trackingId}] User {userMapping.UserId}: " +
@@ -328,7 +691,12 @@ namespace Feature.Matchs.Services
                 {
                     history.Score = userMapping.Score;
                     history.Progress = userMapping.Progress;
-                    history.Status = UserInMatchStatus.Finished;
+                    history.Correct = correctAnswers;
+                    history.Duration = Math.Max(0, duration);
+                    history.Rank = rank;
+                    history.Status = userMapping.IsFinished
+                        ? UserInMatchStatus.Finished
+                        : UserInMatchStatus.EarlyOut;
                     history.ExpScoreGained = expGained;
                     history.RankScoreGained = rankScoreGained;
                 }
@@ -337,14 +705,33 @@ namespace Feature.Matchs.Services
             }
 
             match.Status = MatchStatus.Ended;
-            match.EndedAt = DateTime.UtcNow;
+            match.EndedAt = finalizedAt;
             await uow.Repository<Match>().UpdateAsync(match);
             await uow.SaveChangesAsync();
+
+            _reviewSnapshots[room.MatchId] = new MatchReviewDto
+            {
+                MatchId = room.MatchId,
+                Users = ranked.Select(u => new UserMatchResultItemDto
+                {
+                    UserId = u.UserId,
+                    Name = u.DisplayName,
+                    AvatarUrl = u.AvatarUrl,
+                    Score = u.Score,
+                    ExpGained = match.Users.First(x => x.UserId == u.UserId).ExpScoreGained,
+                    RankScoreGained = match.Users.First(x => x.UserId == u.UserId).RankScoreGained
+                }).ToList(),
+                QuestionReviews = new()
+            };
+            _endedRoomSnapshots[room.MatchId] = room;
 
             try
             {
                 // Remove Firebase realtime doc
-                await _matchRealtimeService.CloseMatchRoomAsync(trackingId);
+                if (!room.IsSolo)
+                {
+                    await _matchRealtimeService.CloseMatchRoomAsync(trackingId);
+                }
             }
             catch (Exception ex)
             {
@@ -355,6 +742,38 @@ namespace Feature.Matchs.Services
                 // Always remove from in-memory tracking
                 _matchs.TryRemove(trackingId, out _);
             }
+        }
+
+        private async Task TryFinalizeMatchAsync(string trackingId, MatchRoomMappingDto room)
+        {
+            if (!room.ProcessedAnswerKeys.TryAdd(FinalizeOnceKey, true))
+            {
+                return;
+            }
+
+            await _matchRealtimeService.AppendMatchEventAsync(
+                trackingId,
+                new MatchRealtimeEventDto
+                {
+                    Type = MatchRealtimeEventTypes.MatchEnded,
+                    Message = "Match ended, finalizing result"
+                },
+                "Trận đấu đã kết thúc, đang tổng kết kết quả");
+            await FinalizeMatchAsync(trackingId, room);
+        }
+
+        private async Task WatchMatchTimeoutAsync(string trackingId, int totalMatchSeconds)
+        {
+            var safeTimeoutSeconds = Math.Max(15, totalMatchSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(safeTimeoutSeconds));
+
+            if (!_matchs.TryGetValue(trackingId, out var room))
+            {
+                return;
+            }
+
+            _logger.LogInfo($"WatchMatchTimeoutAsync: timeout reached for match {trackingId}, force finalize");
+            await TryFinalizeMatchAsync(trackingId, room);
         }
 
         public async Task<MatchResultDto> GetMatchResultAsync(int userId)
@@ -371,7 +790,8 @@ namespace Feature.Matchs.Services
                 {
                     MatchId = m.Id,
                     Users = m.Users
-                        .OrderByDescending(u => u.Score)
+                        .OrderBy(u => u.Rank)
+                        .ThenByDescending(u => u.Score)
                         .Select(u => new UserMatchResultItemDto
                         {
                             UserId = u.UserId,
@@ -387,28 +807,114 @@ namespace Feature.Matchs.Services
                 ?? throw new NotFoundException("No completed match result found for this user");
         }
 
-        private string MapMatchRoomForTracking(List<Question> questions, List<PlayerInLobbyInfoDto> players, Match match)
+        public async Task<MatchResultDto> GetMatchResultByMatchIdAsync(int userId, int matchId)
+        {
+            var result = await _uow.Repository<Match>().GetFirstAsync(
+                predicate: m => m.Id == matchId
+                             && m.Status == MatchStatus.Ended
+                             && m.Users.Any(u => u.UserId == userId),
+                selector: m => new MatchResultDto
+                {
+                    MatchId = m.Id,
+                    Users = m.Users
+                        .OrderBy(u => u.Rank)
+                        .ThenByDescending(u => u.Score)
+                        .Select(u => new UserMatchResultItemDto
+                        {
+                            UserId = u.UserId,
+                            Name = u.User.Name,
+                            AvatarUrl = u.User.AvatarUrl,
+                            Score = u.Score,
+                            ExpGained = u.ExpScoreGained,
+                            RankScoreGained = u.RankScoreGained
+                        }).ToList()
+                });
+
+            return result ?? throw new NotFoundException($"Match result {matchId} not found for this user");
+        }
+
+        public async Task<MatchReviewDto> GetMatchReviewByMatchIdAsync(int userId, int matchId)
+        {
+            var baseResult = await GetMatchResultByMatchIdAsync(userId, matchId);
+            var review = new MatchReviewDto
+            {
+                MatchId = baseResult.MatchId,
+                Users = baseResult.Users
+            };
+
+            if (_endedRoomSnapshots.TryGetValue(matchId, out var endedRoom))
+            {
+                endedRoom.Users.TryGetValue(userId, out var myUser);
+                review.QuestionReviews = endedRoom.Questions.Values
+                    .Select(q =>
+                    {
+                        var yourAnswer = myUser?.Answers.TryGetValue(q.QuestionId, out var answer) == true
+                            ? answer
+                            : null;
+                        return new MatchQuestionReviewItemDto
+                        {
+                            QuestionId = q.QuestionId,
+                            QuestionContent = q.QuestionContent,
+                            CorrectAnswers = q.Answers,
+                            YourAnswers = yourAnswer?.Answers ?? new(),
+                            IsCorrect = yourAnswer?.IsCorrect ?? false
+                        };
+                    }).ToList();
+                return review;
+            }
+
+            var matchEntity = await _uow.Repository<Match>().GetFirstAsync(
+                predicate: m => m.Id == matchId,
+                includes: m => m.Questions);
+            if (matchEntity == null)
+            {
+                review.QuestionReviews = new();
+                return review;
+            }
+
+            var questionIds = matchEntity.Questions.Select(q => q.QuestionId).ToList();
+            var questions = await _uow.Repository<Question>().GetAllAsync(
+                predicate: q => questionIds.Contains(q.Id));
+            review.QuestionReviews = questions.Select(q => new MatchQuestionReviewItemDto
+            {
+                QuestionId = q.Id,
+                QuestionContent = q.StringContent,
+                CorrectAnswers = JsonSerializer.Deserialize<AnswersDto>(q.AnswerJsonData)!.CorrectAnswers,
+                YourAnswers = new(),
+                IsCorrect = false
+            }).ToList();
+            return review;
+        }
+
+        private string MapMatchRoomForTracking(List<Question> questions, List<PlayerInLobbyInfoDto> players, Match match, bool isSolo)
         {
             var trackingId = Guid.NewGuid().ToString();
             _matchs.TryAdd(trackingId, new MatchRoomMappingDto
             {
                 MatchId = match.Id,
+                IsSolo = isSolo,
                 ScorePerQuestions = match.ScorePerCorrectAnswer,
                 Questions = questions.ToDictionary(
                     q => q.Id,
                     q => new QuestionMappingDto
                     {
                         QuestionId = q.Id,
-                        Answers = JsonSerializer.Deserialize<AnswersDto>(q.AnswerJsonData)!.CorrectAnswers
+                        Answers = JsonSerializer.Deserialize<AnswersDto>(q.AnswerJsonData)!.CorrectAnswers,
+                        QuestionContent = q.StringContent
                     }),
                 Users = match.Users.ToDictionary(
                     u => u.UserId,
                     u => new UserMappingDto
                     {
                         UserId = u.UserId,
+                        DisplayName = players.FirstOrDefault(p => p.UserId == u.UserId)?.DisplayName ?? string.Empty,
+                        AvatarUrl = players.FirstOrDefault(p => p.UserId == u.UserId)?.AvatarUrl ?? string.Empty,
                         Progress = u.Progress,
-                        Score = u.Score
+                        Score = u.Score,
+                        IsFinished = false,
+                        FinishedAtUtc = null
                     }),
+                MatchStartedAtUtc = match.CreatedAt,
                 MaxSecondPerQuestion = match.MaxSecondPerQuestion,
             });
 
@@ -436,12 +942,23 @@ namespace Feature.Matchs.Services
 
             // Random: hoàn toàn ngẫu nhiên, không phân biệt topic hay level
             if (contentType == MatchContentType.Random)
-                return Pick(questionPool, safeTotalQuestions);
+            {
+                var randomSet = Pick(questionPool, safeTotalQuestions);
+                if (randomSet.Count < safeTotalQuestions)
+                {
+                    throw new BadRequestException("Not enough questions to create a random match");
+                }
+                return randomSet;
+            }
 
             // Mix: hỗn hợp tất cả topic; OnlyOne: lọc đúng topic
             var filtered = contentType == MatchContentType.Mix
                 ? questionPool
                 : questionPool.Where(q => q.TopicId == topicId).ToList();
+            if (filtered.Count() < safeTotalQuestions)
+            {
+                throw new BadRequestException("Not enough questions for selected topic/content type");
+            }
 
             var byLevel = filtered
                 .GroupBy(q => q.Level)

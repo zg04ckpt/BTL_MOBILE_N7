@@ -25,31 +25,31 @@
         android:gravity="center"
         android:text="Bạn có chắc chắn muốn hủy ghép trận, sau khi hủy không thể vào lại?"
         android:textColor="@color/color11"
-        android:textSize="20sp"/>
+        android:textSize="18sp"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_confirm_cancel"
         android:layout_width="match_parent"
-        android:layout_height="45dp"
+        android:layout_height="56dp"
         app:cornerRadius="6dp"
-        android:backgroundTint="@color/color6"
+        android:backgroundTint="@color/color9"
         android:text="Xác nhận"
         android:textColor="@color/color2"
         android:textStyle="bold"
-        android:textSize="20sp"
+        android:textSize="16sp"
         android:layout_marginTop="24dp"
         android:textAllCaps="false"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_stay_wait"
         android:layout_width="match_parent"
-        android:layout_height="45dp"
+        android:layout_height="56dp"
         app:cornerRadius="6dp"
         android:backgroundTint="@color/color1"
         android:text="Ở lại và tiếp tục chờ"
         android:textColor="@color/color2"
         android:textStyle="bold"
-        android:textSize="20sp"
+        android:textSize="16sp"
         android:layout_marginTop="12dp"
         android:textAllCaps="false"/>
 </LinearLayout>

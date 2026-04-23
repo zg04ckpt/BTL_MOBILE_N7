@@ -22,6 +22,9 @@ apiClient.interceptors.response.use(
 	},
 	async (error: AxiosError) => {
 		const apiError = error as AxiosError;
+		const requestUrl = apiError.config?.url ?? '';
+		const isLoginRequest = requestUrl.includes('/api/auth/login') || requestUrl.endsWith('/auth/login');
+		const isOnLoginPage = window.location.pathname === '/login' || window.location.pathname === '/login/';
 
 		if (apiError.response?.status === 403) {
 			window.location.href = "/403";
@@ -29,7 +32,7 @@ apiClient.interceptors.response.use(
 		}
 
 		if (apiError.response?.status === 401) {
-			if (window.location.pathname !== '/login') {
+			if (!isLoginRequest && !isOnLoginPage) {
 				window.location.href = '/login';
 			}
 		}

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_weight="1"
+    android:gravity="bottom"
+    android:orientation="horizontal"
+    android:paddingVertical="20dp"
+    android:layout_height="100dp">
+
+    <ImageView
+        android:id="@+id/ivIcon"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/gift"
+        android:padding="8dp"
+        android:background="@drawable/bg_img_avatar_gray"/>
+    
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/tvNumberOfQuestions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:text="12 Câu hỏi"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp"
+            android:textStyle="bold"
+            android:textColor="@color/color9"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvRewards"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                tools:listitem="@layout/item_quizmilistone_reward"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStartOrClaim"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bắt đầu ngay"
+                android:paddingVertical="0dp"
+                android:textAllCaps="false"
+                android:textSize="10sp"
+                app:cornerRadius="15dp"
+                android:backgroundTint="@color/color1"/>
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -23,7 +23,7 @@
         android:padding="2dp"
         app:strokeColor="@color/color2"
         app:strokeWidth="2dp"
-        app:shapeAppearanceOverlay="@style/CircleImage"/>
+        />
 
     <TextView
         android:id="@+id/tv_player_name"

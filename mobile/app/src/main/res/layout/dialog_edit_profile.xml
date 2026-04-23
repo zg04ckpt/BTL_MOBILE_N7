@@ -33,19 +33,18 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.google.android.material.imageview.ShapeableImageView
+        <ImageView
             android:id="@+id/iv_current_avatar"
             android:layout_width="76dp"
             android:layout_height="76dp"
             android:layout_marginTop="20dp"
-            android:padding="2dp"
+            android:padding="4dp"
+            android:scaleType="centerCrop"
             android:src="@drawable/home_page_avatar"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tv_dialog_title"
-            app:shapeAppearanceOverlay="@style/CircleImage"
-            app:strokeWidth="5dp"
-            app:strokeColor="@color/color1"/>
+            android:background="@drawable/bg_img_avatar"/>
         
         <TextView
             android:id="@+id/tv_change_avatar"
@@ -91,6 +90,7 @@
             android:layout_marginTop="24dp"
             app:cornerRadius="6dp"
             android:text="Lưu thay đổi"
+            android:textColor="@color/color2"
             android:textStyle="bold"
             android:textSize="16sp"
             android:backgroundTint="@color/color1"

@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/color12"
+    tools:context=".battles.activities.MatchActivity">
+
+    <!-- Background -->
+    <ImageView
+        android:id="@+id/ivBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_match_making" />
+
+    <!-- Exit Button (Fixed at Bottom) -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnExitBattle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_button_red"
+        android:text="Thoát trận"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Scrollable Content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/btnExitBattle"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp">
+
+            <!-- Header: Timer and Score -->
+            <LinearLayout
+                android:id="@+id/layoutHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/tvTimer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_white"
+                    android:elevation="4dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp"
+                    android:text="Thời gian còn lại: 00:03:32"
+                    android:textColor="@color/color9"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Điểm của bạn: 120đ"
+                    android:textColor="@color/color1"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Question Status Row -->
+            <TextView
+                android:id="@+id/tvQuestionCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="12dp"
+                android:text="Câu 8/10"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layoutHeader" />
+
+            <TextView
+                android:id="@+id/tvDifficulty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_tag_event_time_type"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="Khó"
+                android:textColor="@color/white"
+                android:textSize="10sp"
+                app:layout_constraintBottom_toBottomOf="@id/tvQuestionCount"
+                app:layout_constraintStart_toEndOf="@id/tvQuestionCount"
+                app:layout_constraintTop_toTopOf="@id/tvQuestionCount" />
+
+            <!-- Small side button to expand menu -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btnExpandMenu"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="-4dp"
+                app:cardBackgroundColor="@color/color3"
+                app:cardCornerRadius="4dp"
+                app:cardElevation="4dp"
+                app:layout_constraintBottom_toBottomOf="@id/tvQuestionCount"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/tvQuestionCount">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_edit"
+                    app:tint="@color/white" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Side Panel (Bookmark/Save Question) - Hidden by default -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/sidePanel"
+                android:layout_width="56dp"
+                android:layout_height="180dp"
+                android:layout_marginEnd="-8dp"
+                android:visibility="gone"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/tvQuestionCount"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingEnd="8dp"
+                    android:paddingVertical="12dp">
+
+                    <ImageView
+                        android:id="@+id/ivSaveQuestion"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_bell"
+                        app:tint="@color/color9" />
+
+                    <TextView
+                        android:id="@+id/tvToolLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center"
+                        android:text="Loa"
+                        android:textColor="@android:color/black"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvToolCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="x0"
+                        android:textColor="@android:color/black"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Progress Bar -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="10dp"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="8dp"
+                android:progress="80"
+                android:progressDrawable="@drawable/custom_progress_bar"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvQuestionCount" />
+
+            <!-- Question Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardQuestion"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/progressBar">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:id="@+id/tvQuestionText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="10dp"
+                        android:text="Đây là con gì?"
+                        android:textColor="@android:color/black"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivQuestionImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/event_1" />
+
+                    <TextView
+                        android:id="@+id/tvCategory"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_category_tag"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="4dp"
+                        android:text="Động vật"
+                        android:textColor="@color/color6"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Feedback Message (e.g., "Bạn đã chọn sai") -->
+            <LinearLayout
+                android:id="@+id/layoutFeedback"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_button_red"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="6dp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cardQuestion"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_close"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/tvFeedback"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="Bạn đã chọn sai"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Options Container -->
+            <LinearLayout
+                android:id="@+id/layoutOptions"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="32dp"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layoutFeedback">
+
+                <TextView
+                    android:id="@+id/tvOptionA"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_option_card"
+                    android:elevation="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="10dp"
+                    android:text="Con mèo"
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvOptionB"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_option_card"
+                    android:elevation="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="10dp"
+                    android:text="Con mèo mèn"
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvOptionC"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_option_card"
+                    android:elevation="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="10dp"
+                    android:text="Con chó"
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvOptionD"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_option_card"
+                    android:elevation="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="10dp"
+                    android:text="Sinh vật ngoài hành tinh"
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,6 +6,7 @@ using Core.Utilities;
 using Feature.Overview.Interfaces;
 using Feature.Users.Entities;
 using Feature.Users.Interfaces;
+using Feature.Users.Utils;
 using LinqKit;
 using Models.Matchs.Enums;
 using Models.Users.DTOs;
@@ -60,6 +61,7 @@ namespace Feature.Users.Services
                 WinningStreak = rankInfo.WinningStreak,
                 WinningRate = rankInfo.WinningRate,
                 Exp = user.Exp,
+                ExpToUpLevel = LevelUtil.getLimit(user.Level),
                 NumberOfMatchs = rankInfo.NumberOfMatchs,
             };
         }

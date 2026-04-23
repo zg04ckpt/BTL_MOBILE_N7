@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.n7.quizbattle"
+    namespace = "com.hoangcn.quizbattle"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.n7.quizbattle"
+        applicationId = "com.hoangcn.quizbattle"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -49,4 +49,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.github.franmontiel:PersistentCookieJar:v1.0.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
 }

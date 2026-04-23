@@ -57,27 +57,27 @@ namespace Feature.Users.Services
 
             if (user == null)
             {
-                throw new UnauthorizedException("Invalid email or password");
+                throw new BadRequestException("Invalid email or password");
             }
 
             if (user.Status == AccountStatus.Banned)
             {
-                throw new UnauthorizedException("Account is banned");
+                throw new BadRequestException("Account is banned");
             }
 
             if (user.Status == AccountStatus.Deleted)
             {
-                throw new UnauthorizedException("Account does not exist");
+                throw new BadRequestException("Account does not exist");
             }
 
             if (user.Status == AccountStatus.Inactive)
             {
-                throw new UnauthorizedException("Account is not activated");
+                throw new BadRequestException("Account is not activated");
             }
 
             if (!PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
             {
-                throw new UnauthorizedException("Invalid email or password");
+                throw new BadRequestException("Invalid email or password");
             }
 
             var token = GenerateJwtToken(user, loginLiveTimeMinutes ?? 10080);

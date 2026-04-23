@@ -15,6 +15,8 @@ namespace Models.Matchs.Realtimes
         [FirestoreProperty]
         public MatchContentType ContentType { get; set; }
         [FirestoreProperty]
+        public BattleType BattleType { get; set; }
+        [FirestoreProperty]
         public int? TopicId { get; set; }
         [FirestoreProperty]
         public int MaxPlayers { get; set; }

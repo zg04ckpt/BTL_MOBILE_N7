@@ -4,4 +4,6 @@ export * from './user';
 export * from './topic';
 export * from './question';
 export * from './event';
+export * from './analytics';
 export * from './settings';
+export * from './matches';

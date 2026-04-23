@@ -6,8 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#FFFBF0"
-    android:padding="16dp"
-    tools:context=".events.presentation.activities.SeasonalEventDetailActivity">
+    android:padding="16dp">
 
     <RelativeLayout
         android:layout_width="match_parent"

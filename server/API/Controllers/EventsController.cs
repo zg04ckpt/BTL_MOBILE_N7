@@ -25,6 +25,13 @@ namespace API.Controllers
             return Ok(ApiResponse.Success(events));
         }
 
+        [HttpGet("ongoing")]
+        public async Task<IActionResult> GetOngoingEvents()
+        {
+            var events = await _eventService.GetOngoingEventsAsync();
+            return Ok(ApiResponse.Success(events));
+        }
+
         [HttpGet("rewards/mappings")]
         public async Task<IActionResult> GetEventRewardMappings()
         {
@@ -32,20 +39,13 @@ namespace API.Controllers
             return Ok(ApiResponse.Success(mappings));
         }
 
-        [HttpGet("users/{userId}/progresses")]
-        public async Task<IActionResult> GetUserEventProgresses(int userId)
-        {
-            var progresses = await _eventService.GetUserInEventProgressesAsync(userId);
-            return Ok(ApiResponse.Success(progresses));
-        }
-
-        [HttpGet("users/my-progresses")]
+        [HttpGet("users/my-progress")]
         [Authorize]
-        public async Task<IActionResult> GetMyProgresses()
+        public async Task<IActionResult> GetMyProgress([FromQuery(Name = "eventId")] int eventId)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var progresses = await _eventService.GetUserInEventProgressesAsync(userId);
-            return Ok(ApiResponse.Success(progresses));
+            var progress = await _eventService.GetMyProgressByEventAsync(userId, eventId);
+            return Ok(ApiResponse.Success(progress));
         }
 
         [HttpGet("{eventId}/spin")]
@@ -67,6 +67,24 @@ namespace API.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _eventService.UpdateMyProgressAsync(userId, request);
             return Ok(ApiResponse.Success("Event progress updated successfully", result));
+        }
+
+        [HttpPatch("my-progresses/quiz-milestone")]
+        [Authorize]
+        public async Task<IActionResult> UpdateMyQuizMilestoneChallengeProgress([FromBody] UpdateMyQuizMilestoneChallengeProgressRequest request)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _eventService.UpdateMyQuizMilestoneChallengeProgressAsync(userId, request);
+            return Ok(ApiResponse.Success("Quiz milestone challenge progress updated successfully", result));
+        }
+
+        [HttpPatch("claim-reward")]
+        [Authorize]
+        public async Task<IActionResult> ClaimReward([FromBody] ClaimEventRewardRequest request)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _eventService.ClaimRewardAsync(userId, request);
+            return Ok(ApiResponse.Success("Reward claimed successfully", result));
         }
 
         #region Manage

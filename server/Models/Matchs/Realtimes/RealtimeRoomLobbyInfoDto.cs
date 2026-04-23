@@ -16,5 +16,11 @@ namespace Models.Matchs.Realtimes
 
         [FirestoreProperty]
         public List<string> StatusLogs { get; set; }
+
+        [FirestoreProperty]
+        public List<MatchRealtimeEventDto> Events { get; set; } = new();
+
+        [FirestoreProperty]
+        public bool StartTriggered { get; set; }
     }
 }
