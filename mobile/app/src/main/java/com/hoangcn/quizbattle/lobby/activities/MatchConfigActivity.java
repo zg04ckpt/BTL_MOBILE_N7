@@ -113,11 +113,21 @@ public class MatchConfigActivity extends AppCompatActivity {
             View itemView = LayoutInflater.from(this).inflate(R.layout.item_option_card, container, false);
             TextView tvLabel = itemView.findViewById(R.id.tv_label);
 
-            if(item instanceof OptionItem) tvLabel.setText(((OptionItem) item).getLabel());
-            else if(item instanceof TopicItem) tvLabel.setText(((TopicItem) item).getName());
-            else if(item instanceof Integer) tvLabel.setText(item + " Người");
+            if(item instanceof OptionItem) {
+                tvLabel.setText(((OptionItem) item).getLabel());
+                itemView.setTag(((OptionItem) item).getType());
+            }
+            else if(item instanceof TopicItem) {
+                tvLabel.setText(((TopicItem) item).getName());
+                itemView.setTag(((TopicItem) item).getId());
+            }
+            else if(item instanceof Integer) {
+                tvLabel.setText(item + " Người");
+                itemView.setTag(item);
+            }
 
             itemView.setOnClickListener(v -> {
+                if (!v.isEnabled()) return;
                 updateUISelection(container, itemView);
                 saveSelection(category, item);
             });
@@ -129,8 +139,10 @@ public class MatchConfigActivity extends AppCompatActivity {
     private void updateUISelection(ViewGroup container, View selectedView) {
         for(int i = 0; i < container.getChildCount(); i++) {
             View child = container.getChildAt(i);
-            child.setBackgroundResource(R.drawable.bg_option_card);
-            ((TextView) child.findViewById(R.id.tv_label)).setTextColor(getResources().getColor(R.color.color1));
+            if (child.isEnabled()) {
+                child.setBackgroundResource(R.drawable.bg_option_card);
+                ((TextView) child.findViewById(R.id.tv_label)).setTextColor(getResources().getColor(R.color.color1));
+            }
         }
 
         selectedView.setBackgroundResource(R.drawable.bg_option_card_selected);
@@ -141,16 +153,11 @@ public class MatchConfigActivity extends AppCompatActivity {
         if(category.equals("TYPE")) {
             OptionItem option = (OptionItem) item;
             selectedBattleType = option.getType();
-
-            if("Single".equals(selectedBattleType)) {
-                selectedNumberOfPlayers = 1;
-                setPlayerCountEnabled(false);
-            } else {
-                selectedNumberOfPlayers = -1;
-                setPlayerCountEnabled(true);
-            }
+            updatePlayerCountState();
         }
-        else if(category.equals("PLAYERS")) selectedNumberOfPlayers = (Integer) item;
+        else if(category.equals("PLAYERS")) {
+            selectedNumberOfPlayers = (Integer) item;
+        }
         else if(category.equals("TOPIC")) {
             selectedTopicId = ((TopicItem) item).getId();
             selectedContentType = "OnlyOne";
@@ -161,16 +168,57 @@ public class MatchConfigActivity extends AppCompatActivity {
         }
     }
 
+    private void updatePlayerCountState() {
+        if ("Single".equals(selectedBattleType)) {
+            selectedNumberOfPlayers = 1;
+            setPlayerCountEnabled(false);
+            highlightPlayerCount(1);
+        } else if ("Team".equals(selectedBattleType)) {
+            selectedNumberOfPlayers = -1;
+            enableTeamPlayerOptions();
+        }
+    }
+
     private void setPlayerCountEnabled(boolean enabled) {
         llNumberOfPlayers.setAlpha(enabled ? 1.0f : 0.5f);
-
         for(int i = 0; i < llNumberOfPlayers.getChildCount(); i++) {
             View child = llNumberOfPlayers.getChildAt(i);
             child.setEnabled(enabled);
-
-            child.setBackgroundResource(R.drawable.bg_option_card);
-            ((TextView) child.findViewById(R.id.tv_label)).setTextColor(getResources().getColor(R.color.color1));
+            resetItemStyle(child);
         }
+    }
+
+    private void enableTeamPlayerOptions() {
+        llNumberOfPlayers.setAlpha(1.0f);
+        for(int i = 0; i < llNumberOfPlayers.getChildCount(); i++) {
+            View child = llNumberOfPlayers.getChildAt(i);
+            Object tag = child.getTag();
+            if (tag instanceof Integer && (Integer) tag == 1) {
+                child.setEnabled(false);
+                child.setAlpha(0.3f);
+                resetItemStyle(child);
+            } else {
+                child.setEnabled(true);
+                child.setAlpha(1.0f);
+                resetItemStyle(child);
+            }
+        }
+    }
+
+    private void highlightPlayerCount(int count) {
+        for(int i = 0; i < llNumberOfPlayers.getChildCount(); i++) {
+            View child = llNumberOfPlayers.getChildAt(i);
+            Object tag = child.getTag();
+            if (tag instanceof Integer && (Integer) tag == count) {
+                child.setBackgroundResource(R.drawable.bg_option_card_selected);
+                ((TextView) child.findViewById(R.id.tv_label)).setTextColor(Color.WHITE);
+            }
+        }
+    }
+
+    private void resetItemStyle(View view) {
+        view.setBackgroundResource(R.drawable.bg_option_card);
+        ((TextView) view.findViewById(R.id.tv_label)).setTextColor(getResources().getColor(R.color.color1));
     }
 
     private void handleConfirm() {
@@ -187,16 +235,11 @@ public class MatchConfigActivity extends AppCompatActivity {
             return;
         }
 
+        btnConfirm.setEnabled(false); // Ngăn nhấn nhiều lần
         Integer topicIdParam = null;
         if("OnlyOne".equals(selectedContentType)) {
             topicIdParam = selectedTopicId;
         }
-
-        JoinLobbyRequest request = new JoinLobbyRequest(
-                topicIdParam,
-                selectedContentType,
-                selectedNumberOfPlayers,
-                selectedBattleType);
 
         if ("Single".equals(selectedBattleType)) {
             var soloRequest = new StartSoloMatchRequest(selectedContentType, topicIdParam, null);
@@ -205,28 +248,43 @@ public class MatchConfigActivity extends AppCompatActivity {
                 public void onSuccess(ApiResponse<MatchInfoResponse> data) {
                     Intent intent = new Intent(MatchConfigActivity.this, MatchActivity.class);
                     startActivity(intent);
+                    finish(); // Kết thúc để không quay lại đây
                 }
 
                 @Override
                 public void onError(String message) {
-                    Toast.makeText(MatchConfigActivity.this, "Lỗi: " + message, Toast.LENGTH_SHORT).show();
+                    btnConfirm.setEnabled(true);
+                    Toast.makeText(MatchConfigActivity.this, "Lỗi tạo trận đơn: " + message, Toast.LENGTH_SHORT).show();
                 }
             });
             return;
         }
 
+        JoinLobbyRequest request = new JoinLobbyRequest(
+                topicIdParam,
+                selectedContentType,
+                selectedNumberOfPlayers,
+                selectedBattleType);
+
         lobbyService.joinLobby(request, new ApiCallback<JoinLobbyResponse>() {
             @Override
             public void onSuccess(ApiResponse<JoinLobbyResponse> data) {
-                String roomId = data.getData().getLobbyRoomId();
-                Intent intent = new Intent(MatchConfigActivity.this, MatchMakingActivity.class);
-                intent.putExtra("lobbyRoomId", roomId.trim());
-                startActivity(intent);
+                if (data.getData() != null && data.getData().getLobbyRoomId() != null) {
+                    String roomId = data.getData().getLobbyRoomId();
+                    Intent intent = new Intent(MatchConfigActivity.this, MatchMakingActivity.class);
+                    intent.putExtra("lobbyRoomId", roomId.trim());
+                    startActivity(intent);
+                    finish(); // Quan trọng: Kết thúc để khi back từ MatchMaking sẽ về Home
+                } else {
+                    btnConfirm.setEnabled(true);
+                    Toast.makeText(MatchConfigActivity.this, "Lỗi: Không nhận được Room ID", Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
             public void onError(String message) {
-                Toast.makeText(MatchConfigActivity.this, "Lỗi: " + message, Toast.LENGTH_SHORT).show();
+                btnConfirm.setEnabled(true);
+                Toast.makeText(MatchConfigActivity.this, "Lỗi vào phòng: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }
