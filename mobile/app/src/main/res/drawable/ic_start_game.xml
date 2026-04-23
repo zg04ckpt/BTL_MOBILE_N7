@@ -3,7 +3,16 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+  <!-- Crossed swords white - sword 1 -->
   <path
       android:fillColor="@android:color/white"
-      android:pathData="M3.5,5h2v14h-2V5zM19.577,5c0.906,0 1.423,1.064 0.894,1.789l-8.4,11.385c-0.424,0.576 -1.228,0.576 -1.652,0l-2.526,-3.431 1.317,-0.97 1.896,2.573 7.783,-10.55c0.352,-0.477 0.961,-0.585 1.466,-0.258l1.222,0.862z"/>
+      android:pathData="M3,5 L5,3 L21,19 L19,21 Z"/>
+  <!-- Crossed swords white - sword 2 -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M19,3 L21,5 L5,21 L3,19 Z"/>
+  <!-- Center guard -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M10.5,12 L12,10.5 L13.5,12 L12,13.5 Z"/>
 </vector>

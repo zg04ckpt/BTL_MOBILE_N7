@@ -3,28 +3,16 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-  <!-- Crossed swords (X pattern) -->
-  <!-- Sword 1: top-left to bottom-right -->
+  <!-- Crossed swords - sword 1 (top-left to bottom-right) -->
   <path
       android:fillColor="#3F51B5"
-      android:strokeColor="#3F51B5"
-      android:strokeWidth="1.5"
-      android:pathData="M4,4 L8,8 M16,16 L20,20"/>
+      android:pathData="M3,5 L5,3 L21,19 L19,21 Z"/>
+  <!-- Crossed swords - sword 2 (top-right to bottom-left) -->
   <path
       android:fillColor="#3F51B5"
-      android:pathData="M3,3 L9.5,9.5 L8,11 L2,5 Z"/>
+      android:pathData="M19,3 L21,5 L5,21 L3,19 Z"/>
+  <!-- Center guard -->
   <path
       android:fillColor="#3F51B5"
-      android:pathData="M21,21 L14.5,14.5 L16,13 L22,19 Z"/>
-  <!-- Sword 2: top-right to bottom-left -->
-  <path
-      android:fillColor="#3F51B5"
-      android:pathData="M21,3 L14.5,9.5 L13,8 L19,2 Z"/>
-  <path
-      android:fillColor="#3F51B5"
-      android:pathData="M3,21 L9.5,14.5 L8,13 L2,19 Z"/>
-  <!-- Center diamond -->
-  <path
-      android:fillColor="#3F51B5"
-      android:pathData="M12,10.5 L13.5,12 L12,13.5 L10.5,12 Z"/>
+      android:pathData="M10.5,12 L12,10.5 L13.5,12 L12,13.5 Z"/>
 </vector>
