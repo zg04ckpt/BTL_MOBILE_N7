@@ -2,6 +2,7 @@ package com.hoangcn.quizbattle.home_rank.activities;
 
 import static android.view.View.GONE;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -24,19 +25,14 @@ import com.hoangcn.quizbattle.shared.utils.SharedPreferenceUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class RankingActivity extends AppCompatActivity {
     private HomeRankService service;
     private String rankingTimeType = "Total";
-    private String rankingRangeType = "Global";
 
     private TextView tabYearly;
     private TextView tabMonthly;
     private TextView tabTotal;
-
-    private TextView tabFriend;
-    private TextView tabGlobal;
 
     private ImageView ivTop1Avatar;
     private ImageView ivTop2Avatar;
@@ -55,9 +51,15 @@ public class RankingActivity extends AppCompatActivity {
 
     private RankingAdapter rankingAdapter;
     private RecyclerView rvRankingList;
+    // toàn bộ dữ liệu từ API — dùng để tìm current user bất kể thứ hạng
+    private List<UserRankListItem> allRanks = new ArrayList<>();
+    // top 8 — dùng cho podium (top 3) và RecyclerView (rank 4-8)
     private List<UserRankListItem> ranks = new ArrayList<>();
+    // rank 4-8 — dùng cho RecyclerView (top 3 đã hiển thị ở podium)
+    private List<UserRankListItem> rankListItems = new ArrayList<>();
 
     private Button btnBackToGame;
+    private MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +73,34 @@ public class RankingActivity extends AppCompatActivity {
         initData();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(this, R.raw.rank);
+            mediaPlayer.setLooping(true);
+        }
+        mediaPlayer.start();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
     private void initData() {
         loadRankBoard();
     }
@@ -79,12 +109,23 @@ public class RankingActivity extends AppCompatActivity {
         service.getRankBoard(rankingTimeType, new ApiCallback<List<UserRankListItem>>() {
             @Override
             public void onSuccess(ApiResponse<List<UserRankListItem>> data) {
-                data.getData().forEach(r -> {
-                    r.setAvatarUrl(service.getFullImageUrl(r.getAvatarUrl()));
-                });
+                List<UserRankListItem> all = data.getData();
+                all.forEach(r -> r.setAvatarUrl(service.getFullImageUrl(r.getAvatarUrl())));
                 runOnUiThread(() -> {
+                    // Lưu toàn bộ để tìm current user bất kể thứ hạng
+                    allRanks.clear();
+                    allRanks.addAll(all);
+
+                    // Giữ tối đa top 8 cho podium + list
                     ranks.clear();
-                    ranks.addAll(data.getData());
+                    ranks.addAll(all.subList(0, Math.min(8, all.size())));
+
+                    // RecyclerView chỉ hiển thị rank 4-8
+                    rankListItems.clear();
+                    if (ranks.size() > 3) {
+                        rankListItems.addAll(ranks.subList(3, ranks.size()));
+                    }
+
                     rankingAdapter.notifyDataSetChanged();
                     setCurrentUserPlaceholder();
                     renderTop3();
@@ -93,12 +134,12 @@ public class RankingActivity extends AppCompatActivity {
 
             @Override
             public void onError(String message) {
-                runOnUiThread(() -> {
+                runOnUiThread(() ->
                     Toast.makeText(
                         RankingActivity.this,
                         "Lấy dữ liệu xếp hạng thất bại: " + message,
-                        Toast.LENGTH_SHORT);
-                });
+                        Toast.LENGTH_SHORT).show()
+                );
             }
         });
     }
@@ -107,14 +148,6 @@ public class RankingActivity extends AppCompatActivity {
         tabYearly = findViewById(R.id.tabYearly);
         tabMonthly = findViewById(R.id.tabMonthly);
         tabTotal = findViewById(R.id.tabTotal);
-        tabYearly.setText("Năm");
-        tabMonthly.setText("Tháng");
-        tabTotal.setText("Tất cả");
-
-        tabFriend = findViewById(R.id.tabFriend);
-        tabGlobal = findViewById(R.id.tabGlobal);
-        tabFriend.setText("Bạn bè");
-        tabGlobal.setText("Server");
 
         ivTop1Avatar = findViewById(R.id.ivTop1Avatar);
         ivTop2Avatar = findViewById(R.id.ivTop2Avatar);
@@ -126,9 +159,6 @@ public class RankingActivity extends AppCompatActivity {
         tvTop2Score = findViewById(R.id.ivTop2Score);
         tvTop3Score = findViewById(R.id.ivTop3Score);
 
-        tabFriend = findViewById(R.id.tabFriend);
-        tabGlobal = findViewById(R.id.tabGlobal);
-
         ivCurrentUserAvatar = findViewById(R.id.ivCurrentUserAvatar);
         tvCurrentUserRank = findViewById(R.id.tvCurrentUserRank);
         tvCurrentUserName = findViewById(R.id.tvCurrentUserName);
@@ -136,7 +166,7 @@ public class RankingActivity extends AppCompatActivity {
 
         rvRankingList = findViewById(R.id.rvRankingList);
         rvRankingList.setLayoutManager(new LinearLayoutManager(this));
-        rankingAdapter = new RankingAdapter(ranks);
+        rankingAdapter = new RankingAdapter(rankListItems);
         rvRankingList.setAdapter(rankingAdapter);
 
         btnBackToGame = findViewById(R.id.btnBackToGame);
@@ -166,27 +196,15 @@ public class RankingActivity extends AppCompatActivity {
             loadRankBoard();
         });
 
-        tabGlobal.setOnClickListener(l -> {
-            if (rankingRangeType.equals("Global")) return;
-            rankingRangeType = "Global";
-            renderRangeType();
-            loadRankBoard();
-        });
-
-        tabFriend.setOnClickListener(l -> {
-            rankingRangeType = "Friend";
-            renderRangeType();
-        });
-
         btnBackToGame.setOnClickListener(l -> finish());
 
-        rankingAdapter.setOnItemClickListener(l -> {
-            Toast.makeText(this, "Chức năng đang phát triển", Toast.LENGTH_SHORT).show();
-        });
+        rankingAdapter.setOnItemClickListener(l ->
+            Toast.makeText(this, "Chức năng đang phát triển", Toast.LENGTH_SHORT).show()
+        );
     }
 
     private void renderTop3() {
-        if (ranks.size() > 1) {
+        if (ranks.size() >= 1) {
             var top1Info = ranks.get(0);
             Glide.with(this).load(top1Info.getAvatarUrl())
                     .centerCrop().circleCrop().into(ivTop1Avatar);
@@ -196,10 +214,9 @@ public class RankingActivity extends AppCompatActivity {
             ivTop1Avatar.setVisibility(GONE);
             tvTop1Name.setText("-");
             tvTop1Score.setText("-");
-            return;
         }
 
-        if (ranks.size() > 2) {
+        if (ranks.size() >= 2) {
             var top2Info = ranks.get(1);
             Glide.with(this).load(top2Info.getAvatarUrl())
                     .centerCrop().circleCrop().into(ivTop2Avatar);
@@ -209,10 +226,9 @@ public class RankingActivity extends AppCompatActivity {
             ivTop2Avatar.setVisibility(GONE);
             tvTop2Name.setText("-");
             tvTop2Score.setText("-");
-            return;
         }
 
-        if (ranks.size() > 3) {
+        if (ranks.size() >= 3) {
             var top3Info = ranks.get(2);
             Glide.with(this).load(top3Info.getAvatarUrl())
                     .centerCrop().circleCrop().into(ivTop3Avatar);
@@ -222,17 +238,6 @@ public class RankingActivity extends AppCompatActivity {
             ivTop3Avatar.setVisibility(GONE);
             tvTop3Name.setText("-");
             tvTop3Score.setText("-");
-            return;
-        }
-    }
-
-    private void renderRangeType() {
-        if (rankingRangeType.equals("Global")) {
-            setTabSelected(tabGlobal, true);
-            setTabSelected(tabFriend, false);
-        } else if (rankingRangeType.equals("Friend")) {
-            setTabSelected(tabGlobal, false);
-            setTabSelected(tabFriend, true);
         }
     }
 
@@ -245,13 +250,12 @@ public class RankingActivity extends AppCompatActivity {
             setTabSelected(tabMonthly, false);
             setTabSelected(tabYearly, true);
             setTabSelected(tabTotal, false);
-        } else if (rankingTimeType.equals("Total")) {
+        } else {
             setTabSelected(tabMonthly, false);
             setTabSelected(tabYearly, false);
             setTabSelected(tabTotal, true);
         }
     }
-
 
     private void setTabSelected(TextView tab, boolean selected) {
         tab.setBackgroundResource(selected ? R.drawable.bg_tab_selected : android.R.color.transparent);
@@ -261,7 +265,7 @@ public class RankingActivity extends AppCompatActivity {
     private void setCurrentUserPlaceholder() {
         int userId = SharedPreferenceUtil.getInstance(this).getInt("userId", -1);
         if (userId != -1) {
-            var info = ranks.stream().filter(r -> r.getUserId() == userId).findFirst();
+            var info = allRanks.stream().filter(r -> r.getUserId() == userId).findFirst();
             if (info.isPresent()) {
                 Glide.with(this).load(info.get().getAvatarUrl())
                         .centerCrop().circleCrop().into(ivCurrentUserAvatar);

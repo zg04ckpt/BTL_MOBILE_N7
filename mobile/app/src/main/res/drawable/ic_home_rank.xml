@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <!-- Material Design: workspace_premium / medal with ribbon -->
+  <!-- Ribbon top left -->
+  <path
+      android:fillColor="#9C27B0"
+      android:pathData="M12,2L9.5,7.5L4,8.27L8,12.14L7.06,17.6L12,14.9L16.94,17.6L16,12.14
+          L20,8.27L14.5,7.5Z"/>
+  <!-- Stem/ribbon hang -->
+  <path
+      android:fillColor="#7B1FA2"
+      android:pathData="M9,17.5V22l3-1.5L15,22v-4.5L12,19z"/>
+</vector>
