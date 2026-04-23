@@ -180,7 +180,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void setListeners() {
-        findViewById(R.id.iv_bell).setOnClickListener(v -> onNotificationClick());
+//        findViewById(R.id.iv_bell).setOnClickListener(v -> onNotificationClick());
 //        findViewById(R.id.card_start_game).setOnClickListener(v -> onStartGameClick());
 //        findViewById(R.id.tv_start_game).setOnClickListener(v -> onStartGameClick());
 //        findViewById(R.id.iv_event_image).setOnClickListener(v -> onEventBannerClick());
