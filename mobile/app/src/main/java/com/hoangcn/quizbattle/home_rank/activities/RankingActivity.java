@@ -50,9 +50,11 @@ public class RankingActivity extends AppCompatActivity {
 
     private RankingAdapter rankingAdapter;
     private RecyclerView rvRankingList;
-    // top 5 full list — dùng cho podium và current user lookup
+    // toàn bộ dữ liệu từ API — dùng để tìm current user bất kể thứ hạng
+    private List<UserRankListItem> allRanks = new ArrayList<>();
+    // top 8 — dùng cho podium (top 3) và RecyclerView (rank 4-8)
     private List<UserRankListItem> ranks = new ArrayList<>();
-    // rank 4-5 only — dùng cho RecyclerView (top 3 đã hiển thị ở podium)
+    // rank 4-8 — dùng cho RecyclerView (top 3 đã hiển thị ở podium)
     private List<UserRankListItem> rankListItems = new ArrayList<>();
 
     private Button btnBackToGame;
@@ -80,11 +82,15 @@ public class RankingActivity extends AppCompatActivity {
                 List<UserRankListItem> all = data.getData();
                 all.forEach(r -> r.setAvatarUrl(service.getFullImageUrl(r.getAvatarUrl())));
                 runOnUiThread(() -> {
-                    // Giữ tối đa top 5
-                    ranks.clear();
-                    ranks.addAll(all.subList(0, Math.min(5, all.size())));
+                    // Lưu toàn bộ để tìm current user bất kể thứ hạng
+                    allRanks.clear();
+                    allRanks.addAll(all);
 
-                    // RecyclerView chỉ hiển thị rank 4-5
+                    // Giữ tối đa top 8 cho podium + list
+                    ranks.clear();
+                    ranks.addAll(all.subList(0, Math.min(8, all.size())));
+
+                    // RecyclerView chỉ hiển thị rank 4-8
                     rankListItems.clear();
                     if (ranks.size() > 3) {
                         rankListItems.addAll(ranks.subList(3, ranks.size()));
@@ -229,7 +235,7 @@ public class RankingActivity extends AppCompatActivity {
     private void setCurrentUserPlaceholder() {
         int userId = SharedPreferenceUtil.getInstance(this).getInt("userId", -1);
         if (userId != -1) {
-            var info = ranks.stream().filter(r -> r.getUserId() == userId).findFirst();
+            var info = allRanks.stream().filter(r -> r.getUserId() == userId).findFirst();
             if (info.isPresent()) {
                 Glide.with(this).load(info.get().getAvatarUrl())
                         .centerCrop().circleCrop().into(ivCurrentUserAvatar);
