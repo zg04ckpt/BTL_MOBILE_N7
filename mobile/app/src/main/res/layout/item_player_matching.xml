@@ -18,11 +18,12 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/iv_player_avatar"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:padding="2dp"
-        app:strokeColor="@color/color2"
+        app:strokeColor="@color/color1"
         app:strokeWidth="2dp"
+        app:shapeAppearanceOverlay="@style/CircleAppearanceOverlay"
         />
 
     <TextView

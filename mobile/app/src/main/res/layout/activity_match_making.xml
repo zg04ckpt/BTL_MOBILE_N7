@@ -24,7 +24,7 @@
     <ImageView
         android:id="@+id/iv_time_frame"
         android:layout_width="wrap_content"
-        android:layout_height="204dp"
+        android:layout_height="180dp"
         android:src="@drawable/img_time_frame"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -57,26 +57,37 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_time_frame"/>
 
-    <LinearLayout
-        android:id="@+id/ll_players_container"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- Danh sách người chơi với khả năng cuộn và tự xuống dòng -->
+    <ScrollView
+        android:id="@+id/sv_players"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_match_status" />
+        android:layout_marginBottom="16dp"
+        android:paddingHorizontal="20dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/tv_match_status"
+        app:layout_constraintBottom_toTopOf="@id/sv_logs">
 
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/ll_players_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:flexWrap="wrap"
+            app:justifyContent="center"
+            app:alignItems="center"
+            app:alignContent="center" />
+    </ScrollView>
+
+    <!-- Khu vực logs -->
     <ScrollView
         android:id="@+id/sv_logs"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="120dp"
         android:scrollbars="none"
         android:overScrollMode="never"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="24dp"
         android:paddingHorizontal="20dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/btn_cancel_match">
 
         <LinearLayout
