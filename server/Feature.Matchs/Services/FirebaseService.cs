@@ -256,7 +256,9 @@ namespace Feature.Matchs.Services
                         DisplayName = e.DisplayName,
                         Level = e.Level,
                         Progress = 0,
-                        Score = 0
+                        Score = 0,
+                        IsOnline = true,
+                        LastSeenAtUtc = DateTime.UtcNow
                     }).ToList()
                 };
 
@@ -394,6 +396,27 @@ namespace Feature.Matchs.Services
             {
                 _logService.LogError($"Failed to update leaderboard for match {trackingId}: {ex.Message}");
                 return false;
+            }
+        }
+
+        public async Task<Dictionary<int, MatchPlayerInfoDto>> GetPlayerPresenceAsync(string trackingId)
+        {
+            try
+            {
+                var docRef = _db.Collection("match-rooms").Document(trackingId);
+                var snapshot = await docRef.GetSnapshotAsync();
+                if (!snapshot.Exists)
+                {
+                    return new Dictionary<int, MatchPlayerInfoDto>();
+                }
+
+                var room = snapshot.ConvertTo<MatchRoomDto>();
+                return room.Players.ToDictionary(p => p.UserId, p => p);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"Failed to load presence for match {trackingId}: {ex.Message}");
+                return new Dictionary<int, MatchPlayerInfoDto>();
             }
         }
 

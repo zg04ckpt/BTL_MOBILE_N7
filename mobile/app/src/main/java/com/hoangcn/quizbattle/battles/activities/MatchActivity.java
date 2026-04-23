@@ -1,6 +1,7 @@
 package com.hoangcn.quizbattle.battles.activities;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,12 +11,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.bumptech.glide.Glide;
 import com.hoangcn.quizbattle.R;
@@ -32,9 +29,9 @@ import com.hoangcn.quizbattle.events.models.UpdateQuizMilestoneProgressRequest;
 import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
 import com.hoangcn.quizbattle.shared.utils.SharedPreferenceUtil;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.Timestamp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +39,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.HashMap;
 
 public class MatchActivity extends AppCompatActivity {
     private static final int MAX_MATCH_INFO_RETRIES = 8;
@@ -68,6 +67,7 @@ public class MatchActivity extends AppCompatActivity {
     private ImageView ivSaveQuestion;
     private TextView tvToolLabel;
     private TextView tvToolCount;
+    private TextView tvLoudspeakerNotice;
 
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -87,17 +87,30 @@ public class MatchActivity extends AppCompatActivity {
     private boolean isChallengeMatch = false;
     private int challengeEventId = 0;
     private int challengeThresholdId = 0;
+    private boolean isLeavingAfk = false;
     private EventModel challengeEvent;
     private ListenerRegistration matchRoomListener;
-    private long listenerStartedAtMs = 0L;
+    private MediaPlayer soundPlayer;
     private final Set<String> seenLoudspeakerEventKeys = new HashSet<>();
     private List<TextView> optionViews;
+    private final Random random = new Random();
+    private final Handler heartbeatHandler = new Handler(Looper.getMainLooper());
+    // Heartbeat presence 5s/lần để backend phát hiện AFK qua Firestore.
+    private final Runnable heartbeatRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isSoloMatch && trackingId != null && !trackingId.isEmpty()) {
+                sendPresence(true);
+            }
+            heartbeatHandler.postDelayed(this, 5000);
+        }
+    };
     private final String[] loudspeakerMessages = new String[]
-        {
-            "Ga qua, de sieu de!",
-            "Tap trung di, sap het gio!",
-            "Nhanh tay len nao!"
-        };
+    {
+        "Ga qua, de sieu de!",
+        "Tap trung di, sap het gio!",
+        "Nhanh tay len nao!"
+    };
 
     private final Runnable timerRunnable = new Runnable() {
         @Override
@@ -116,13 +129,7 @@ public class MatchActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_match);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
 
         battleService = new BattleService(this);
         eventService = new EventService(this);
@@ -156,16 +163,13 @@ public class MatchActivity extends AppCompatActivity {
         ivSaveQuestion = findViewById(R.id.ivSaveQuestion);
         tvToolLabel = findViewById(R.id.tvToolLabel);
         tvToolCount = findViewById(R.id.tvToolCount);
+        tvLoudspeakerNotice = findViewById(R.id.tvLoudspeakerNotice);
         optionViews = Arrays.asList(tvOptionA, tvOptionB, tvOptionC, tvOptionD);
     }
 
     private void initEvents() {
         Button btnExit = findViewById(R.id.btnExitBattle);
-        btnExit.setOnClickListener(v -> {
-            Intent intent = new Intent(this, WaitResultActivity.class);
-            startActivity(intent);
-            finish();
-        });
+        btnExit.setOnClickListener(v -> leaveMatchAsAfk());
 
         tvOptionA.setOnClickListener(v -> submitCurrentAnswer(getTextOrNull(tvOptionA)));
         tvOptionB.setOnClickListener(v -> submitCurrentAnswer(getTextOrNull(tvOptionB)));
@@ -250,6 +254,8 @@ public class MatchActivity extends AppCompatActivity {
         if (!isSoloMatch) {
             loadLoudspeakerInventory();
             subscribeMatchRoomEvents();
+            heartbeatHandler.removeCallbacks(heartbeatRunnable);
+            heartbeatHandler.post(heartbeatRunnable);
         }
         updateScoreLabel();
 
@@ -405,7 +411,6 @@ public class MatchActivity extends AppCompatActivity {
         if (matchRoomListener != null) {
             matchRoomListener.remove();
         }
-        listenerStartedAtMs = System.currentTimeMillis();
         seenLoudspeakerEventKeys.clear();
 
         matchRoomListener = db.collection("match-rooms").document(trackingId)
@@ -413,56 +418,68 @@ public class MatchActivity extends AppCompatActivity {
                 if (error != null || snapshot == null || !snapshot.exists()) {
                     return;
                 }
-
                 List<Map<String, Object>> events = (List<Map<String, Object>>) snapshot.get("Events");
-                if (events == null) {
-                    return;
-                }
-
-                for (var event : events) {
+                if (events == null) return;
+                for (Map<String, Object> event : events) {
                     if (event == null) continue;
                     var type = event.get("Type");
                     if (type == null) type = event.get("type");
-                    if (!"loudspeaker_used".equals(type)) continue;
+                    String normalizedType = type == null ? "" : String.valueOf(type).trim().toLowerCase(Locale.ROOT);
+                    if (!"loudspeaker_used".equals(normalizedType)) continue;
 
                     var actorObj = event.get("ActorUserId");
                     if (actorObj == null) actorObj = event.get("actorUserId");
-                    int actorUserId = -1;
-                    if (actorObj instanceof Number) {
-                        actorUserId = ((Number) actorObj).intValue();
-                    }
+                    int actorUserId = parseUserId(actorObj);
+                    if (actorUserId == myUserId) continue;
 
                     var messageObj = event.get("Message");
                     if (messageObj == null) messageObj = event.get("message");
-                    var text = messageObj == null ? "Thong diep tu doi thu" : String.valueOf(messageObj);
+                    String text = messageObj == null ? "Thong diep tu doi thu" : String.valueOf(messageObj);
                     var timestampObj = event.get("Timestamp");
                     if (timestampObj == null) timestampObj = event.get("timestamp");
-                    long eventTimeMs = extractEventTimeMs(timestampObj);
-                    var eventKey = actorUserId + "|" + text + "|" + String.valueOf(timestampObj);
-
-                    if (seenLoudspeakerEventKeys.contains(eventKey)) {
-                        continue;
-                    }
-
+                    String eventKey = actorUserId + "|" + text + "|" + String.valueOf(timestampObj);
+                    if (seenLoudspeakerEventKeys.contains(eventKey)) continue;
                     seenLoudspeakerEventKeys.add(eventKey);
-                    if (eventTimeMs > 0 && eventTimeMs < (listenerStartedAtMs - 2000)) continue;
-
-                    if (actorUserId == myUserId) {
-                        continue;
-                    }
-
-                    runOnUiThread(() -> Toast.makeText(MatchActivity.this, "Loa doi thu: " + text, Toast.LENGTH_SHORT).show());
+                    showLoudspeakerBanner(text);
                 }
-
             });
+                
     }
 
-    private long extractEventTimeMs(Object timestampObj) {
-        if (timestampObj instanceof Timestamp) {
-            return ((Timestamp) timestampObj).toDate().getTime();
+    private int parseUserId(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
         }
-        return 0L;
+        if (value == null) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (Exception ignored) {
+            return -1;
+        }
     }
+
+    private void showLoudspeakerBanner(String message) {
+        runOnUiThread(() -> {
+            tvLoudspeakerNotice.setText("Loa đối thủ: " + message);
+            tvLoudspeakerNotice.setTranslationY(-20f);
+            tvLoudspeakerNotice.setAlpha(0f);
+            tvLoudspeakerNotice.setVisibility(android.view.View.VISIBLE);
+            tvLoudspeakerNotice.animate().translationY(0f).alpha(1f).setDuration(180).start();
+            timerHandler.removeCallbacks(hideLoudspeakerBannerRunnable);
+            timerHandler.postDelayed(hideLoudspeakerBannerRunnable, 2200);
+        });
+    }
+
+    private final Runnable hideLoudspeakerBannerRunnable = () -> {
+        if (tvLoudspeakerNotice != null) {
+            tvLoudspeakerNotice.animate().translationY(-12f).alpha(0f).setDuration(150).withEndAction(() -> {
+                tvLoudspeakerNotice.setVisibility(android.view.View.GONE);
+                tvLoudspeakerNotice.setTranslationY(0f);
+            }).start();
+        }
+    };
 
     private void updateTimerLabel() {
         tvTimer.setText("Thời gian còn lại: " + secondsLeft + "s");
@@ -507,6 +524,7 @@ public class MatchActivity extends AppCompatActivity {
                         currentScore += 20;
                         updateScoreLabel();
                     }
+                    playAnswerResultSound(isCorrect);
                     showFeedback(isCorrect);
                     timerHandler.postDelayed(() -> {
                         hideFeedback();
@@ -542,6 +560,7 @@ public class MatchActivity extends AppCompatActivity {
         timerHandler.removeCallbacks(timerRunnable);
         secondsLeft = 0;
         updateTimerLabel();
+        playIncorrectSound();
         showMissedFeedback();
         submitEmptyAnswerWithoutBlocking();
         timerHandler.postDelayed(() -> {
@@ -586,6 +605,76 @@ public class MatchActivity extends AppCompatActivity {
         layoutFeedback.setBackgroundResource(isCorrect ? R.drawable.bg_option_card_selected : R.drawable.bg_button_red);
     }
 
+    private void playAnswerResultSound(boolean isCorrect) {
+        if (isCorrect) {
+            playRandomCorrectSound();
+            return;
+        }
+        playIncorrectSound();
+    }
+
+    private void playRandomCorrectSound() {
+        String[] candidates = new String[] {
+            "correct",
+            "correct1", "correct2", "correct3",
+            "correct_1", "correct_2", "correct_3"
+        };
+        List<Integer> existing = new ArrayList<>();
+        for (String candidate : candidates) {
+            int id = findRawResourceId(candidate);
+            if (id != 0) {
+                existing.add(id);
+            }
+        }
+        if (existing.isEmpty()) {
+            return;
+        }
+        playSound(existing.get(random.nextInt(existing.size())));
+    }
+
+    private void playIncorrectSound() {
+        int resourceId = findRawResourceId("incorrect");
+        if (resourceId != 0) {
+            playSound(resourceId);
+        }
+    }
+
+    private int findRawResourceId(String name) {
+        return getResources().getIdentifier(name, "raw", getPackageName());
+    }
+
+    private void playSound(int rawResourceId) {
+        if (rawResourceId == 0) {
+            return;
+        }
+        releaseSoundPlayer();
+        soundPlayer = MediaPlayer.create(this, rawResourceId);
+        if (soundPlayer == null) {
+            return;
+        }
+        soundPlayer.setOnCompletionListener(mp -> {
+            mp.release();
+            if (soundPlayer == mp) {
+                soundPlayer = null;
+            }
+        });
+        soundPlayer.start();
+    }
+
+    private void releaseSoundPlayer() {
+        if (soundPlayer == null) {
+            return;
+        }
+        try {
+            if (soundPlayer.isPlaying()) {
+                soundPlayer.stop();
+            }
+        } catch (IllegalStateException ignored) {
+        }
+        soundPlayer.release();
+        soundPlayer = null;
+    }
+
     private void showMissedFeedback() {
         layoutFeedback.setVisibility(android.view.View.VISIBLE);
         tvFeedback.setText("Bạn đã bỏ lỡ 1 câu");
@@ -597,6 +686,8 @@ public class MatchActivity extends AppCompatActivity {
     }
 
     private void goToWaitResult() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+        sendPresence(false);
         if (isChallengeMatch && challengeEventId > 0 && challengeThresholdId > 0) {
             eventService.updateQuizMilestoneProgress(
                 new UpdateQuizMilestoneProgressRequest(challengeEventId, challengeThresholdId, null, true),
@@ -627,6 +718,51 @@ public class MatchActivity extends AppCompatActivity {
         finish();
     }
 
+    private void leaveMatchAsAfk() {
+        if (isLeavingAfk) return;
+        isLeavingAfk = true;
+        questionLocked = true;
+        timerHandler.removeCallbacks(timerRunnable);
+        setOptionsEnabled(false);
+
+        if (isSoloMatch || trackingId == null || trackingId.isEmpty() || questions.isEmpty()) {
+            goToWaitResult();
+            return;
+        }
+
+        // AFK: gửi đáp án rỗng cho toàn bộ câu còn lại để không giữ trận.
+        List<Integer> remainingQuestionIds = new ArrayList<>();
+        for (int i = Math.max(0, currentQuestionIndex); i < questions.size(); i++) {
+            remainingQuestionIds.add(questions.get(i).getId());
+        }
+        submitAfkAnswersSequentially(remainingQuestionIds, 0);
+    }
+
+    private void submitAfkAnswersSequentially(List<Integer> questionIds, int index) {
+        if (questionIds == null || index >= questionIds.size()) {
+            goToWaitResult();
+            return;
+        }
+        int questionId = questionIds.get(index);
+        var request = new SubmitMatchAnswerRequest(trackingId, questionId, new ArrayList<>());
+        battleService.submitMatchAnswer(request, new ApiCallback<>() {
+            @Override
+            public void onSuccess(ApiResponse<Object> data) {
+                submitAfkAnswersSequentially(questionIds, index + 1);
+            }
+
+            @Override
+            public void onError(String message) {
+                submitAfkAnswersSequentially(questionIds, index + 1);
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        leaveMatchAsAfk();
+    }
+
     private void navigateBackToChallenge() {
         runOnUiThread(() -> {
             Intent intent = new Intent(MatchActivity.this, QuizMilestoneChallengeActivity.class);
@@ -642,9 +778,40 @@ public class MatchActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         timerHandler.removeCallbacksAndMessages(null);
+        heartbeatHandler.removeCallbacksAndMessages(null);
+        sendPresence(false);
         if (matchRoomListener != null) {
             matchRoomListener.remove();
         }
+        releaseSoundPlayer();
         super.onDestroy();
+    }
+
+    private void sendPresence(boolean isOnline) {
+        if (isSoloMatch || trackingId == null || trackingId.isEmpty()) {
+            return;
+        }
+        // Client chỉ cập nhật presence của chính mình trong Players.
+        var docRef = db.collection("match-rooms").document(trackingId);
+        docRef.get().addOnSuccessListener(snapshot -> {
+            if (snapshot == null || !snapshot.exists()) return;
+            List<Map<String, Object>> players = (List<Map<String, Object>>) snapshot.get("Players");
+            if (players == null) return;
+            boolean changed = false;
+            for (Map<String, Object> player : players) {
+                if (player == null) continue;
+                int userId = parseUserId(player.get("UserId"));
+                if (userId != myUserId) continue;
+                Map<String, Object> mutable = new HashMap<>(player);
+                mutable.put("IsOnline", isOnline);
+                mutable.put("LastSeenAtUtc", Timestamp.now());
+                player.clear();
+                player.putAll(mutable);
+                changed = true;
+                break;
+            }
+            if (!changed) return;
+            docRef.update("Players", players);
+        });
     }
 }

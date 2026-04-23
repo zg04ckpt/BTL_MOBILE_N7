@@ -1,52 +1,20 @@
-# GIAO DIỆN THI ĐẤU VƯỢT ẢI ĐƠN
+# GIAO DIỆN THI ĐẤU SOLO (THEO LUỒNG HIỆN TẠI)
 
-## 1. MỤC ĐÍCH
+## 1. Mục đích
+Thi đấu một mình bằng chính `MatchActivity` (dùng chung với multiplayer).
 
-Giao diện hiển thị nội dung thi đấu cho một người chơi duy nhất. Số lượng câu hỏi không giới hạn, thời gian thi đấu không giới hạn.
+## 2. Cách vào màn
+- Từ `MatchConfigActivity`, khi chọn `Single` sẽ gọi `startSoloMatch`.
+- Thành công sẽ mở thẳng `MatchActivity`.
+- Mở từ thử thách trong sự kiện `QuizMilestoneChallenge` 
 
-## 2. CÁC THÀNH PHẦN GIAO DIỆN
+## 3. Hành vi trong màn
+- Hiển thị câu hỏi tuần tự, đếm thời gian theo từng câu.
+- Gửi đáp án bằng API `submitMatchAnswer`.
+- Hiển thị feedback đúng/sai/bỏ lỡ tương tự multiplayer.
+- Không bật lắng nghe realtime loa trong chế độ solo.
 
-### 2.1. Đếm Ngược Bắt Đầu
-- Lớp phủ mờ toàn màn hình.
-- Bộ đếm ngược: 3 -> 2 -> 1.
+## 4. Kết thúc
+- Làm xong câu cuối: chuyển thẳng `MatchResultActivity` (không qua `WaitResultActivity`).
+- Solo không cộng/trừ điểm xếp hạng; trọng tâm là điểm bài làm và EXP nhận được.
 
-### 2.2. Thanh Tiến Trình (Top Bar)
-- Vị trí: Cố định trên top, không bị thay đổi khi cuộn.
-- Thông tin:
-  - Số lượng câu đã làm (Ví dụ: 5)
-  - Số lượng câu đúng (Ví dụ: 4)
-  - Điểm (Ví dụ: 40)
-  - Thời gian đã trôi qua (Ví dụ: 01h 21p 32s)
-- Button: Mở Menu hành động.
-
-### 2.3. Khu Vực Câu Hỏi
-- Nội dung Text: Nội dung câu hỏi.
-- Multimedia (Nếu có): Image, Video, Audio minh họa.
-
-### 2.4. Khu Vực Đáp Án
-- Loại 1 lựa chọn: 4 Hàng với 4 RadioButton.
-- Loại nhiều lựa chọn: N Hàng với N Checkbox.
-
-### 2.5. Nút Điều Hướng
-- Nút "Câu tiếp theo":
-  - Text: "Câu tiếp theo"
-  - Hành động: Chuyển sang câu mới (Không thể quay lại câu cũ).
-
-### 2.6. Menu Hành Động
-- Kích thước: Rộng 1/2 màn hình + Cao tối đa 80%.
-- Kiểu: Popup hoặc Drawer có thể cuộn.
-- Các chức năng:
-  - Nút Nộp bài: Kết thúc phần thi sớm.
-  - Nút Hướng dẫn: Hiển thị quy tắc trò chơi.
-
-### 2.7. Popup Hướng Dẫn
-- Tiêu đề: Quy tắc trò chơi.
-- Button: Đóng.
-- Kiểu: BottomSheetDialog.
-
-## 3. LUỒNG THAO TÁC
-1. Đếm ngược 3s -> Vào màn hình chính.
-2. Hiển thị Câu hỏi + Đáp án.
-3. Người dùng chọn đáp án -> Ấn "Câu tiếp theo".
-4. Nếu muốn dừng: Mở Menu hành động -> Ấn "Nộp bài" -> Xác nhận -> Chuyển sang Giao diện Kết quả.
-5. Nếu muốn xem luật: Mở Menu hành động -> Ấn "Hướng dẫn" -> Đóng.

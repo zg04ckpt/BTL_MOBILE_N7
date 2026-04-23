@@ -11,5 +11,9 @@ namespace Models.Matchs.Realtimes
         public int Rank { get; set; }
         [FirestoreProperty]
         public int Progress { get; set; }
+        [FirestoreProperty]
+        public bool IsOnline { get; set; } = true;
+        [FirestoreProperty]
+        public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

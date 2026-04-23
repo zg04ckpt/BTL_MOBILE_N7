@@ -5,6 +5,7 @@ public class MatchProgressUserItem {
     private String displayName;
     private String avatarUrl;
     private int score;
+    private int correct;
     private int progress;
     private int rank;
     private boolean isFinished;
@@ -23,6 +24,10 @@ public class MatchProgressUserItem {
 
     public int getScore() {
         return score;
+    }
+
+    public int getCorrect() {
+        return correct;
     }
 
     public int getProgress() {

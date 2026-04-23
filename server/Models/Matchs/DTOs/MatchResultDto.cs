@@ -14,5 +14,6 @@ namespace Models.Matchs.DTOs
         public int Score { get; set; }
         public int ExpGained { get; set; }
         public int RankScoreGained { get; set; }
+        public bool IsRankProtected { get; set; }
     }
 }

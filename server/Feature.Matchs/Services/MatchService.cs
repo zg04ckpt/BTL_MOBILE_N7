@@ -25,6 +25,8 @@ namespace Feature.Matchs.Services
     public class MatchService : IMatchService
     {
         private const string FinalizeOnceKey = "__finalize_once__";
+        private const int PresenceTimeoutSeconds = 10;
+        private const int PresenceCheckIntervalSeconds = 5;
         private static int _isRealtimeAnswerSubscribed;
         private readonly ILogService<MatchService> _logger;
         private readonly IMatchRealtimeService _matchRealtimeService;
@@ -204,6 +206,7 @@ namespace Feature.Matchs.Services
                     throw new ServerErrorException("Failed to start new match room");
                 }
                 _ = WatchMatchTimeoutAsync(trackingId, settings.QuestionTimeLimit * settings.QuestionsPerMatch);
+                _ = WatchMatchPresenceTimeoutAsync(trackingId);
             }
             catch (ServerErrorException)
             {
@@ -302,6 +305,7 @@ namespace Feature.Matchs.Services
                 isSolo: true);
 
             _ = WatchMatchTimeoutAsync(trackingId, settings.QuestionTimeLimit * Math.Max(1, questions.Count));
+            _ = WatchMatchPresenceTimeoutAsync(trackingId);
             return await GetMatchInfoAsync(userId);
         }
 
@@ -393,6 +397,7 @@ namespace Feature.Matchs.Services
                         DisplayName = u.DisplayName,
                         AvatarUrl = u.AvatarUrl,
                         Score = u.Score,
+                        Correct = u.Answers.Values.Count(a => a.IsCorrect),
                         Progress = u.Progress,
                         Rank = idx + 1,
                         IsFinished = u.IsFinished
@@ -503,7 +508,8 @@ namespace Feature.Matchs.Services
                 throw new BadRequestException("TrackingId is required");
             }
 
-            if (string.IsNullOrWhiteSpace(request.Message))
+            var normalizedMessage = request.Message?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedMessage))
             {
                 throw new BadRequestException("Message is required");
             }
@@ -528,19 +534,24 @@ namespace Feature.Matchs.Services
                 throw new BadRequestException("No loudspeaker remaining");
             }
 
-            claimed.Value--;
-            await _uow.Repository<EventReward>().UpdateAsync(reward!);
-            await _uow.SaveChangesAsync();
-
-            await _matchRealtimeService.AppendMatchEventAsync(
+            var appended = await _matchRealtimeService.AppendMatchEventAsync(
                 request.TrackingId,
                 new MatchRealtimeEventDto
                 {
                     Type = MatchRealtimeEventTypes.LoudspeakerUsed,
-                    Message = request.Message.Trim(),
+                    Message = normalizedMessage,
                     ActorUserId = userId
                 },
-                $"Người chơi {userId} đã dùng loa");
+                $"LOUDSPEAKER|{userId}|{normalizedMessage}");
+            if (!appended)
+            {
+                _logger.LogError($"UseLoudspeaker: failed to append realtime event for trackingId {request.TrackingId}, user {userId}");
+                throw new ServerErrorException("Không thể phát loa lúc này, vui lòng thử lại");
+            }
+
+            claimed.Value--;
+            await _uow.Repository<EventReward>().UpdateAsync(reward!);
+            await _uow.SaveChangesAsync();
 
             return new MatchLoudspeakerInventoryDto
             {
@@ -671,14 +682,26 @@ namespace Feature.Matchs.Services
             // RankScoreGained: winner +BaseWinPoints, others -BaseLosePoints
             var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
             var settings = await settingsService.GetAllSettingsAsync();
+            var rankProtectionReward = await uow.Repository<EventReward>().GetFirstAsync(
+                predicate: r => r.Type == EventRewardType.RankProtectionCard,
+                includes: r => r.ClaimedRewards);
             int rank = 1;
             foreach (var userMapping in ranked)
             {
                 int correctAnswers = userMapping.Score / (room.ScorePerQuestions > 0 ? room.ScorePerQuestions : 1);
-                int expGained = 50 + correctAnswers * 10;
+                int expGained = userMapping.IsAfk ? 0 : (50 + correctAnswers * 10);
                 int rankScoreGained = (match.BattleType == BattleType.Single && match.NumberOfPlayers == 1)
                     ? 0
                     : (rank == 1 ? settings.BaseWinPoints : -settings.BaseLosePoints);
+                if (rankScoreGained < 0)
+                {
+                    var claimedRankProtection = rankProtectionReward?.ClaimedRewards?.FirstOrDefault(cr => cr.UserId == userMapping.UserId);
+                    if (claimedRankProtection != null && claimedRankProtection.Value > 0)
+                    {
+                        claimedRankProtection.Value--;
+                        rankScoreGained = 0;
+                    }
+                }
                 var finishedAt = userMapping.FinishedAtUtc ?? finalizedAt;
                 var duration = (decimal)(finishedAt - room.MatchStartedAtUtc).TotalSeconds;
 
@@ -695,7 +718,7 @@ namespace Feature.Matchs.Services
                     history.Duration = Math.Max(0, duration);
                     history.Rank = rank;
                     history.Status = userMapping.IsFinished
-                        ? UserInMatchStatus.Finished
+                        ? (userMapping.IsAfk ? UserInMatchStatus.EarlyOut : UserInMatchStatus.Finished)
                         : UserInMatchStatus.EarlyOut;
                     history.ExpScoreGained = expGained;
                     history.RankScoreGained = rankScoreGained;
@@ -719,7 +742,11 @@ namespace Feature.Matchs.Services
                     AvatarUrl = u.AvatarUrl,
                     Score = u.Score,
                     ExpGained = match.Users.First(x => x.UserId == u.UserId).ExpScoreGained,
-                    RankScoreGained = match.Users.First(x => x.UserId == u.UserId).RankScoreGained
+                    RankScoreGained = match.Users.First(x => x.UserId == u.UserId).RankScoreGained,
+                    IsRankProtected = match.BattleType != BattleType.Single
+                        && match.NumberOfPlayers > 1
+                        && match.Users.First(x => x.UserId == u.UserId).Rank > 1
+                        && match.Users.First(x => x.UserId == u.UserId).RankScoreGained == 0
                 }).ToList(),
                 QuestionReviews = new()
             };
@@ -727,11 +754,8 @@ namespace Feature.Matchs.Services
 
             try
             {
-                // Remove Firebase realtime doc
-                if (!room.IsSolo)
-                {
-                    await _matchRealtimeService.CloseMatchRoomAsync(trackingId);
-                }
+                // Always remove Firebase room doc when match is finalized (including solo).
+                await _matchRealtimeService.CloseMatchRoomAsync(trackingId);
             }
             catch (Exception ex)
             {
@@ -776,6 +800,73 @@ namespace Feature.Matchs.Services
             await TryFinalizeMatchAsync(trackingId, room);
         }
 
+        private async Task WatchMatchPresenceTimeoutAsync(string trackingId)
+        {
+            while (true)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(PresenceCheckIntervalSeconds));
+                if (!_matchs.TryGetValue(trackingId, out var room))
+                {
+                    return;
+                }
+
+                if (room.IsSolo)
+                {
+                    continue;
+                }
+
+                var now = DateTime.UtcNow;
+                // Nguồn sự thật presence lấy từ Firestore do client heartbeat trực tiếp.
+                var presenceMap = await _matchRealtimeService.GetPlayerPresenceAsync(trackingId);
+                foreach (var kv in presenceMap)
+                {
+                    if (!room.Users.TryGetValue(kv.Key, out var user)) continue;
+                    user.IsOnline = kv.Value.IsOnline;
+                    user.LastSeenAtUtc = kv.Value.LastSeenAtUtc;
+                }
+                var afkAnswers = new List<MatchPlayerAnswerDto>();
+                foreach (var user in room.Users.Values.Where(u => !u.IsFinished).ToList())
+                {
+                    if ((now - user.LastSeenAtUtc).TotalSeconds <= PresenceTimeoutSeconds)
+                    {
+                        continue;
+                    }
+
+                    // User AFK quá timeout: tự động nộp rỗng các câu còn lại.
+                    user.IsOnline = false;
+                    user.IsAfk = true;
+                    await _matchRealtimeService.AppendMatchEventAsync(
+                        trackingId,
+                        new MatchRealtimeEventDto
+                        {
+                            Type = MatchRealtimeEventTypes.PlayerFinished,
+                            Message = $"User {user.UserId} timeout/AFK, auto submit remaining questions",
+                            ActorUserId = user.UserId
+                        },
+                        $"Người chơi {user.UserId} mất kết nối, hệ thống tự động nộp phần còn lại");
+
+                    foreach (var questionId in room.Questions.Keys)
+                    {
+                        if (user.Answers.ContainsKey(questionId))
+                        {
+                            continue;
+                        }
+                        afkAnswers.Add(new MatchPlayerAnswerDto
+                        {
+                            UserId = user.UserId,
+                            QuestionId = questionId,
+                            Answer = new List<string>()
+                        });
+                    }
+                }
+
+                if (afkAnswers.Count > 0)
+                {
+                    await ProcessAnswersForRoomAsync(trackingId, room, afkAnswers);
+                }
+            }
+        }
+
         public async Task<MatchResultDto> GetMatchResultAsync(int userId)
         {
             // Find the most recently ended match this user participated in
@@ -799,7 +890,11 @@ namespace Feature.Matchs.Services
                             AvatarUrl = u.User.AvatarUrl,
                             Score = u.Score,
                             ExpGained = u.ExpScoreGained,
-                            RankScoreGained = u.RankScoreGained
+                            RankScoreGained = u.RankScoreGained,
+                            IsRankProtected = m.BattleType != BattleType.Single
+                                && m.NumberOfPlayers > 1
+                                && u.Rank > 1
+                                && u.RankScoreGained == 0
                         }).ToList()
                 });
 
@@ -826,7 +921,11 @@ namespace Feature.Matchs.Services
                             AvatarUrl = u.User.AvatarUrl,
                             Score = u.Score,
                             ExpGained = u.ExpScoreGained,
-                            RankScoreGained = u.RankScoreGained
+                            RankScoreGained = u.RankScoreGained,
+                            IsRankProtected = m.BattleType != BattleType.Single
+                                && m.NumberOfPlayers > 1
+                                && u.Rank > 1
+                                && u.RankScoreGained == 0
                         }).ToList()
                 });
 
@@ -911,6 +1010,9 @@ namespace Feature.Matchs.Services
                         AvatarUrl = players.FirstOrDefault(p => p.UserId == u.UserId)?.AvatarUrl ?? string.Empty,
                         Progress = u.Progress,
                         Score = u.Score,
+                        IsOnline = true,
+                        LastSeenAtUtc = DateTime.UtcNow,
+                        IsAfk = false,
                         IsFinished = false,
                         FinishedAtUtc = null
                     }),

@@ -34,6 +34,9 @@ namespace Models.Matchs.DTOs
         public string AvatarUrl { get; set; } = string.Empty;
         public int Progress { get; set; }
         public int Score { get; set; }
+        public bool IsOnline { get; set; }
+        public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
+        public bool IsAfk { get; set; }
         public bool IsFinished { get; set; }
         public DateTime? FinishedAtUtc { get; set; }
         public ConcurrentDictionary<int, UserQuestionAnswerMappingDto> Answers { get; set; } = new();
