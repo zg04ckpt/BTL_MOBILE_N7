@@ -3,7 +3,8 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+  <!-- Growth trend arrow -->
   <path
-      android:fillColor="@color/color7"
+      android:fillColor="#4CAF50"
       android:pathData="M16,6l2.29,2.29 -4.88,4.88 -4,-4L2,16.59 3.41,18 9.41,12l4,4 6.3,-6.29L22,12v-6z"/>
 </vector>
