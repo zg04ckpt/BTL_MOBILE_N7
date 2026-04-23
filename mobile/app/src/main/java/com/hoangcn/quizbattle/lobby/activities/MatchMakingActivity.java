@@ -2,6 +2,7 @@ package com.hoangcn.quizbattle.lobby.activities;
 
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.transition.ChangeBounds;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -38,7 +40,8 @@ import java.util.Map;
 
 public class MatchMakingActivity extends AppCompatActivity {
     private TextView tvTimerValue, tvMatchStatus;
-    private LinearLayout llPlayersContainer, llLogsContainer;
+    private FlexboxLayout llPlayersContainer;
+    private LinearLayout llLogsContainer;
 
     private Button btn_cancel_match;
 
@@ -51,6 +54,8 @@ public class MatchMakingActivity extends AppCompatActivity {
     private int myUserId = -1;
     private boolean hasSeenLobbySnapshot = false;
     private boolean hasNavigatedToWaitResult = false;
+
+    private MediaPlayer mediaPlayer;
 
     private int seconds = 0;
     private Handler timerHandler = new Handler();
@@ -81,6 +86,7 @@ public class MatchMakingActivity extends AppCompatActivity {
         startTimer();
         initEvents();
         listenToLobbyRoom();
+        startBackgroundMusic();
     }
 
     private void initViews() {
@@ -248,9 +254,34 @@ public class MatchMakingActivity extends AppCompatActivity {
         finish();
     }
 
+    private void startBackgroundMusic() {
+        mediaPlayer = MediaPlayer.create(this, R.raw.match_making_background_music);
+        if (mediaPlayer != null) {
+            mediaPlayer.setLooping(true);
+            mediaPlayer.start();
+        }
+    }
+
+    private void stopBackgroundMusic() {
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
     @Override
     public void onBackPressed() {
         showCancelConfirmationSheet();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Dừng nhạc khi Activity không còn hiển thị (bao gồm cả khi chuyển màn hình)
+        stopBackgroundMusic();
     }
 
     @Override
@@ -258,6 +289,7 @@ public class MatchMakingActivity extends AppCompatActivity {
         super.onDestroy();
         timerHandler.removeCallbacks(timerRunnable);
         if (lobbyListener != null) lobbyListener.remove();
+        stopBackgroundMusic();
     }
 
 }
