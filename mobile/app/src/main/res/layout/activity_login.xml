@@ -70,9 +70,12 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:hintEnabled="false"
-                    app:passwordToggleEnabled="true"
                     android:layout_marginTop="8dp"
+                    app:hintEnabled="false"
+                    app:endIconMode="password_toggle"
+                    app:boxBackgroundMode="none"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
                     app:passwordToggleTint="@color/color1">
 
                     <com.google.android.material.textfield.TextInputEditText
