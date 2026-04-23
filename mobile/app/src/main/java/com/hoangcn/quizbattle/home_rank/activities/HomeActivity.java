@@ -164,7 +164,7 @@ public class HomeActivity extends AppCompatActivity {
                 findViewById(R.id.include_item_win_rate),
                 R.drawable.ic_home_win_rate,
                 "Tỷ lệ thắng",
-                String.valueOf(data.getWinningRate() + "%"));
+                String.format("%.2f%%", data.getWinningRate()));
     }
 
     private void initViews() {
