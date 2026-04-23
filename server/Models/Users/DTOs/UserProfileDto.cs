@@ -8,6 +8,7 @@
         public int Level { get; set; }
         public int Rank { get; set; }
         public int Exp { get; set; }
+        public int ExpToUpLevel { get; set; }
         public int RankScore { get; set; }
         public int WinningStreak { get; set; }
         public float WinningRate { get; set; }

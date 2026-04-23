@@ -4,6 +4,7 @@ using Core.Interfaces;
 using Core.Models;
 using Feature.Events.Interfaces;
 using Feature.Users.Entities;
+using Feature.Users.Utils;
 using Microsoft.Extensions.Logging;
 using Models.Events.DTOs;
 using Models.Events.DTOs.LuckySpin;
@@ -81,11 +82,6 @@ namespace Feature.Events.Services
                 {
                     data.Add(LuckySpinEventDto.MapFromEntity(e));
                 }
-
-                else if (e.EventType == EventType.TournamentRewards)
-                {
-                    data.Add(TournamentRewardsEventDto.MapFromEntity(e));
-                }
             }
 
             return data;
@@ -128,7 +124,7 @@ namespace Feature.Events.Services
                     progresses.Add(new QuizMilestoneChallengeProgressDto
                     {
                         EventId = item.EventId,
-                        Info = JsonSerializer.Deserialize<QuizMilestoneChallengeProgressInfoDto>(item.ProgressJsonData, JsonSerializerOptions)!,
+                        ThresholdProgresses = DeserializeQuizMilestoneProgresses(item.ProgressJsonData),
                         LastChanged = item.LastChanged.ToLocalTime()
                     });
                 } 
@@ -155,6 +151,91 @@ namespace Feature.Events.Services
             }
 
             return progresses;
+        }
+
+        public async Task<object> GetMyProgressByEventAsync(int userId, int eventId)
+        {
+            var user = await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == userId,
+                includes: e => e.EventsProgress)
+                ?? throw new NotFoundException("User not found");
+
+            var @event = await GetEntityAsync<Event>(eventId);
+            user.EventsProgress ??= new List<UserInEvent>();
+            var progress = user.EventsProgress.FirstOrDefault(e => e.EventId == eventId);
+            if (progress == null)
+            {
+                var defaultProgressJson = string.Empty;
+
+                if (@event.EventType == EventType.QuizMilestoneChallenge)
+                {
+                    var thresholds = JsonSerializer.Deserialize<List<QuizMilestoneChallengeThresholdDto>>(@event.EventConfigJsonData, JsonSerializerOptions)
+                        ?? throw new BadRequestException("Event config JSON has invalid structure");
+
+                    var defaultThresholdProgresses = thresholds
+                        .Select(t => new QuizMilestoneChallengeProgressInfoDto
+                        {
+                            ThresholdId = t.ThresholdId,
+                            RewardClaimed = false,
+                            Completed = false
+                        })
+                        .ToList();
+
+                    ValidateQuizMilestoneProgresses(defaultThresholdProgresses);
+                    defaultProgressJson = JsonSerializer.Serialize(defaultThresholdProgresses, JsonSerializerOptions);
+                }
+                else if (@event.EventType == EventType.LuckySpin)
+                {
+                    defaultProgressJson = JsonSerializer.Serialize(0, JsonSerializerOptions);
+                }
+                else if (@event.EventType == EventType.TournamentRewards)
+                {
+                    var tasks = JsonSerializer.Deserialize<List<TournamentRewardsTaskDto>>(@event.EventConfigJsonData, JsonSerializerOptions)
+                        ?? throw new BadRequestException("Event config JSON has invalid structure");
+
+                    var defaultTaskProgresses = tasks
+                        .Select(t => new TournamentRewardsProgressInfoDto
+                        {
+                            TaskId = t.TaskId,
+                            RewardClaimed = false,
+                            Completed = false
+                        })
+                        .ToList();
+
+                    defaultProgressJson = JsonSerializer.Serialize(defaultTaskProgresses, JsonSerializerOptions);
+                }
+                else
+                {
+                    throw new BadRequestException("Unsupported event type");
+                }
+
+                progress = new UserInEvent
+                {
+                    UserId = userId,
+                    EventId = eventId,
+                    ProgressJsonData = defaultProgressJson,
+                    LastChanged = DateTime.UtcNow
+                };
+
+                user.EventsProgress.Add(progress);
+                await _uow.Repository<User>().UpdateAsync(user);
+                await _uow.SaveChangesAsync();
+            }
+
+            if (@event.EventType == EventType.LuckySpin)
+            {
+                var spinTime = JsonSerializer.Deserialize<int>(progress.ProgressJsonData, JsonSerializerOptions);
+                if (progress.LastChanged.Date != DateTime.UtcNow.Date) spinTime = 0;
+
+                return new LuckySpinProgress
+                {
+                    EventId = progress.EventId,
+                    TodaySpinTime = spinTime,
+                    LastChanged = progress.LastChanged.ToLocalTime()
+                };
+            }
+
+            return MapProgressDto(progress.EventId, @event.EventType, progress.ProgressJsonData, progress.LastChanged);
         }
 
         public async Task<object> UpdateMyProgressAsync(int userId, UpdateMyEventProgressRequest request)
@@ -191,6 +272,172 @@ namespace Feature.Events.Services
             await _uow.SaveChangesAsync();
 
             return MapProgressDto(progress.EventId, @event.EventType, progress.ProgressJsonData, progress.LastChanged);
+        }
+
+        public async Task<QuizMilestoneChallengeProgressDto> UpdateMyQuizMilestoneChallengeProgressAsync(int userId, UpdateMyQuizMilestoneChallengeProgressRequest request)
+        {
+            var user = await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == userId,
+                includes: e => e.EventsProgress)
+                ?? throw new NotFoundException("User not found");
+
+            var @event = await GetEntityAsync<Event>(request.EventId);
+            if (@event.EventType != EventType.QuizMilestoneChallenge)
+                throw new BadRequestException("Event must be QuizMilestoneChallenge event");
+
+            user.EventsProgress ??= new List<UserInEvent>();
+            var progress = user.EventsProgress.FirstOrDefault(e => e.EventId == request.EventId);
+
+            var thresholdProgresses = progress == null
+                ? new List<QuizMilestoneChallengeProgressInfoDto>()
+                : DeserializeQuizMilestoneProgresses(progress.ProgressJsonData);
+
+            var thresholdProgress = thresholdProgresses.FirstOrDefault(e => e.ThresholdId == request.ThresholdId);
+            if (thresholdProgress == null)
+            {
+                thresholdProgress = new QuizMilestoneChallengeProgressInfoDto
+                {
+                    ThresholdId = request.ThresholdId
+                };
+                thresholdProgresses.Add(thresholdProgress);
+            }
+
+            if (request.RewardClaimed.HasValue)
+                thresholdProgress.RewardClaimed = request.RewardClaimed.Value;
+
+            if (request.Completed.HasValue)
+                thresholdProgress.Completed = request.Completed.Value;
+
+            ValidateQuizMilestoneProgresses(thresholdProgresses);
+            var normalizedProgressJson = JsonSerializer.Serialize(thresholdProgresses, JsonSerializerOptions);
+
+            if (progress == null)
+            {
+                progress = new UserInEvent
+                {
+                    UserId = userId,
+                    EventId = request.EventId,
+                    ProgressJsonData = normalizedProgressJson,
+                    LastChanged = DateTime.UtcNow
+                };
+                user.EventsProgress.Add(progress);
+            }
+            else
+            {
+                progress.ProgressJsonData = normalizedProgressJson;
+                progress.LastChanged = DateTime.UtcNow;
+            }
+
+            await _uow.Repository<User>().UpdateAsync(user);
+            await _uow.SaveChangesAsync();
+
+            return new QuizMilestoneChallengeProgressDto
+            {
+                EventId = progress.EventId,
+                ThresholdProgresses = DeserializeQuizMilestoneProgresses(progress.ProgressJsonData),
+                LastChanged = progress.LastChanged.ToLocalTime()
+            };
+        }
+
+        public async Task<object> ClaimRewardAsync(int userId, ClaimEventRewardRequest request)
+        {
+            var user = await _uow.Repository<User>().GetFirstAsync(
+                predicate: e => e.Id == userId,
+                includes: e => e.EventsProgress)
+                ?? throw new NotFoundException("User not found");
+
+            var @event = await GetEntityAsync<Event>(request.EventId);
+            user.EventsProgress ??= new List<UserInEvent>();
+            var progress = user.EventsProgress.FirstOrDefault(e => e.EventId == request.EventId);
+
+            if (@event.EventType == EventType.QuizMilestoneChallenge)
+            {
+                if (!request.ThresholdId.HasValue)
+                    throw new BadRequestException("Threshold id is required for QuizMilestoneChallenge event");
+
+                var thresholds = JsonSerializer.Deserialize<List<QuizMilestoneChallengeThresholdDto>>(@event.EventConfigJsonData, JsonSerializerOptions)
+                    ?? throw new BadRequestException("Event config JSON has invalid structure");
+
+                var threshold = thresholds.FirstOrDefault(t => t.ThresholdId == request.ThresholdId.Value);
+
+                if (threshold == null)
+                    throw new BadRequestException("Threshold does not exist in this event");
+
+                if (progress == null)
+                    throw new BadRequestException("Cannot claim reward because this threshold is not completed");
+
+                var thresholdProgresses = DeserializeQuizMilestoneProgresses(progress.ProgressJsonData);
+                var thresholdProgress = thresholdProgresses.FirstOrDefault(e => e.ThresholdId == request.ThresholdId.Value)
+                    ?? throw new BadRequestException("Threshold progress not found");
+
+                if (!thresholdProgress.Completed)
+                    throw new BadRequestException("Cannot claim reward because this threshold is not completed");
+
+                if (thresholdProgress.RewardClaimed)
+                    throw new BadRequestException("Reward for this threshold has already been claimed");
+
+                thresholdProgress.RewardClaimed = true;
+                ValidateQuizMilestoneProgresses(thresholdProgresses);
+                progress.ProgressJsonData = JsonSerializer.Serialize(thresholdProgresses, JsonSerializerOptions);
+                progress.LastChanged = DateTime.UtcNow;
+
+                await GrantRewardsToUserAsync(user, userId, threshold.Rewards);
+                await _uow.Repository<User>().UpdateAsync(user);
+                await _uow.SaveChangesAsync();
+
+                return new QuizMilestoneChallengeProgressDto
+                {
+                    EventId = progress.EventId,
+                    ThresholdProgresses = DeserializeQuizMilestoneProgresses(progress.ProgressJsonData),
+                    LastChanged = progress.LastChanged.ToLocalTime()
+                };
+            }
+
+            if (@event.EventType == EventType.TournamentRewards)
+            {
+                if (!request.TaskId.HasValue)
+                    throw new BadRequestException("Task id is required for TournamentRewards event");
+
+                var tasks = JsonSerializer.Deserialize<List<TournamentRewardsTaskDto>>(@event.EventConfigJsonData, JsonSerializerOptions)
+                    ?? throw new BadRequestException("Event config JSON has invalid structure");
+
+                var task = tasks.FirstOrDefault(t => t.TaskId == request.TaskId.Value);
+
+                if (task == null)
+                    throw new BadRequestException("Task does not exist in this event");
+
+                if (progress == null)
+                    throw new BadRequestException("Cannot claim reward because this task is not completed");
+
+                var taskProgresses = JsonSerializer.Deserialize<List<TournamentRewardsProgressInfoDto>>(progress.ProgressJsonData, JsonSerializerOptions)
+                    ?? throw new BadRequestException("Progress JSON has invalid structure");
+
+                var taskProgress = taskProgresses.FirstOrDefault(e => e.TaskId == request.TaskId.Value)
+                    ?? throw new BadRequestException("Task progress not found");
+
+                if (!taskProgress.Completed)
+                    throw new BadRequestException("Cannot claim reward because this task is not completed");
+
+                if (taskProgress.RewardClaimed)
+                    throw new BadRequestException("Reward for this task has already been claimed");
+
+                taskProgress.RewardClaimed = true;
+                progress.ProgressJsonData = JsonSerializer.Serialize(taskProgresses, JsonSerializerOptions);
+                progress.LastChanged = DateTime.UtcNow;
+
+                await GrantRewardsToUserAsync(user, userId, task.Rewards);
+                await _uow.Repository<User>().UpdateAsync(user);
+                await _uow.SaveChangesAsync();
+
+                return new TournamentRewardsProgressDto
+                {
+                    EventId = progress.EventId,
+                    TaskProgresses = JsonSerializer.Deserialize<List<TournamentRewardsProgressInfoDto>>(progress.ProgressJsonData, JsonSerializerOptions)!,
+                    LastChanged = progress.LastChanged.ToLocalTime()
+                };
+            }
+
+            throw new BadRequestException("Claim reward only supports QuizMilestoneChallenge and TournamentRewards events");
         }
 
         public async Task<ChangedResponse> UpdateEventAsync(int eventId, UpdateEventRequest request)
@@ -301,12 +548,46 @@ namespace Feature.Events.Services
                 }
 
                 await _uow.Repository<EventReward>().UpdateAsync(reward);
+
+            }
+
+            // Xử lý nếu quay trúng kinh nghiệm thì cộng thêm kinh nghiệm cho user
+            int? expItemId = await _uow.Repository<EventReward>().GetFirstAsync(
+                predicate: e => e.Type == EventRewardType.ExpScore,
+                selector: e => e.Id);
+            if (expItemId != null && expItemId == winItem.Reward.EventRewardId)
+            {
+                var result = LevelUtil.plusExpScore(user.Level, user.Exp, winItem.Reward.Value);
+                user.Level = result.NewLevel;
+                user.Exp = result.NewScore;
+                await _uow.Repository<User>().UpdateAsync(user);
             }
 
             await _uow.SaveChangesAsync();
 
             winItem.Rate = 0;
             return winItem;
+        }
+
+
+        public async Task<List<EventDto>> GetOngoingEventsAsync()
+        {
+            var events = await _uow.Repository<Event>().GetAllAsync(
+                predicate: e => e.IsLocked == false && e.EventType != EventType.TournamentRewards,
+                selector: e => new EventDto
+                {
+                    Id = e.Id,
+                    Desc = e.Desc,
+                    EndTime = e.EndTime,
+                    IsLocked = e.IsLocked,
+                    Name = e.Name,
+                    StartTime = e.StartTime,
+                    TimeType = e.EventTimeType,
+                    Type = e.EventType
+                }
+            );
+
+            return events.ToList();
         }
 
         #region Private
@@ -336,8 +617,15 @@ namespace Feature.Events.Services
                             throw new BadRequestException("Value of exp bonus each threshold must have at least 1");
                         if (threshold.ChallengeQuestionIds.Count == 0)
                             throw new BadRequestException("Number of quesitons each threshold must have at least 1");
-                        if (threshold.ChallengeQuestionIds.Count != await _uow.Repository<Question>().CountAsync(e => threshold.ChallengeQuestionIds.Contains(e.Id)))
-                            throw new BadRequestException("All quesitons of each threshold must be existing in database");
+                        var normalizedQuestionIds = threshold.ChallengeQuestionIds
+                            .Where(id => id > 0)
+                            .Distinct()
+                            .ToList();
+                        if (normalizedQuestionIds.Count == 0)
+                            throw new BadRequestException("Number of questions each threshold must have at least 1");
+                        if (normalizedQuestionIds.Count != await _uow.Repository<Question>().CountAsync(e => normalizedQuestionIds.Contains(e.Id)))
+                            throw new BadRequestException("All questions of each threshold must be existing in database");
+                        threshold.ChallengeQuestionIds = normalizedQuestionIds;
 
                         if (threshold.Rewards.Count == 0)
                             throw new BadRequestException("Number of rewards each threshold must have at least 1");
@@ -450,8 +738,15 @@ namespace Feature.Events.Services
                             throw new BadRequestException("Value of exp bonus each threshold must have at least 1");
                         if (threshold.ChallengeQuestionIds.Count == 0)
                             throw new BadRequestException("Number of quesitons each threshold must have at least 1");
-                        if (threshold.ChallengeQuestionIds.Count != await _uow.Repository<Question>().CountAsync(e => threshold.ChallengeQuestionIds.Contains(e.Id)))
-                            throw new BadRequestException("All quesitons of each threshold must be existing in database");
+                        var normalizedQuestionIds = threshold.ChallengeQuestionIds
+                            .Where(id => id > 0)
+                            .Distinct()
+                            .ToList();
+                        if (normalizedQuestionIds.Count == 0)
+                            throw new BadRequestException("Number of questions each threshold must have at least 1");
+                        if (normalizedQuestionIds.Count != await _uow.Repository<Question>().CountAsync(e => normalizedQuestionIds.Contains(e.Id)))
+                            throw new BadRequestException("All questions of each threshold must be existing in database");
+                        threshold.ChallengeQuestionIds = normalizedQuestionIds;
 
                         if (threshold.Rewards.Count == 0)
                             throw new BadRequestException("Number of rewards each threshold must have at least 1");
@@ -550,22 +845,59 @@ namespace Feature.Events.Services
                 throw new BadRequestException("Reward value must be greater than 0");
         }
 
+        private async Task GrantRewardsToUserAsync(User user, int userId, List<EventRewardDto> rewards)
+        {
+            if (rewards == null || rewards.Count == 0)
+                return;
+
+            var totalExpReward = 0;
+            foreach (var rewardDto in rewards)
+            {
+                var reward = await _uow.Repository<EventReward>().GetFirstAsync(
+                    predicate: e => e.Id == rewardDto.EventRewardId,
+                    includes: e => e.ClaimedRewards)
+                    ?? throw new ServerErrorException("Reward info is not exists");
+
+                reward.ClaimedRewards ??= new List<ClaimedReward>();
+                var claimed = reward.ClaimedRewards.FirstOrDefault(cr => cr.UserId == userId);
+                if (claimed != null)
+                {
+                    claimed.Value += rewardDto.Value;
+                }
+                else
+                {
+                    reward.ClaimedRewards.Add(new ClaimedReward
+                    {
+                        User = user,
+                        Value = rewardDto.Value
+                    });
+                }
+
+                if (reward.Type == EventRewardType.ExpScore)
+                {
+                    totalExpReward += rewardDto.Value;
+                }
+
+                await _uow.Repository<EventReward>().UpdateAsync(reward);
+            }
+
+            if (totalExpReward > 0)
+            {
+                var result = LevelUtil.plusExpScore(user.Level, user.Exp, totalExpReward);
+                user.Level = result.NewLevel;
+                user.Exp = result.NewScore;
+            }
+        }
+
         private string ValidateAndNormalizeProgressJson(EventType eventType, string progressJsonData)
         {
             try
             {
                 if (eventType == EventType.QuizMilestoneChallenge)
                 {
-                    var progress = JsonSerializer.Deserialize<QuizMilestoneChallengeProgressInfoDto>(progressJsonData, JsonSerializerOptions)
-                        ?? throw new BadRequestException("Progress JSON has invalid structure");
-
-                    if (progress.CompletedQuestions < 0)
-                        throw new BadRequestException("Completed questions must be greater than or equal to 0");
-
-                    if (progress.RewardClaimedThresholdIds == null)
-                        throw new BadRequestException("Reward claimed threshold ids is required");
-
-                    return JsonSerializer.Serialize(progress, JsonSerializerOptions);
+                    var progresses = DeserializeQuizMilestoneProgresses(progressJsonData);
+                    ValidateQuizMilestoneProgresses(progresses);
+                    return JsonSerializer.Serialize(progresses, JsonSerializerOptions);
                 }
 
                 if (eventType == EventType.LuckySpin)
@@ -610,7 +942,7 @@ namespace Feature.Events.Services
                 return new QuizMilestoneChallengeProgressDto
                 {
                     EventId = eventId,
-                    Info = JsonSerializer.Deserialize<QuizMilestoneChallengeProgressInfoDto>(progressJsonData, JsonSerializerOptions)!,
+                    ThresholdProgresses = DeserializeQuizMilestoneProgresses(progressJsonData),
                     LastChanged = lastChanged.ToLocalTime()
                 };
             }
@@ -633,7 +965,54 @@ namespace Feature.Events.Services
             };
         }
 
-        #endregion
+        private List<QuizMilestoneChallengeProgressInfoDto> DeserializeQuizMilestoneProgresses(string progressJsonData)
+        {
+            try
+            {
+                using var jsonDoc = JsonDocument.Parse(progressJsonData);
+                if (jsonDoc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    return JsonSerializer.Deserialize<List<QuizMilestoneChallengeProgressInfoDto>>(progressJsonData, JsonSerializerOptions)
+                        ?? throw new BadRequestException("Progress JSON has invalid structure");
+                }
+
+                if (jsonDoc.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    var singleProgress = JsonSerializer.Deserialize<QuizMilestoneChallengeProgressInfoDto>(progressJsonData, JsonSerializerOptions)
+                        ?? throw new BadRequestException("Progress JSON has invalid structure");
+
+                    return new List<QuizMilestoneChallengeProgressInfoDto> { singleProgress };
+                }
+
+                throw new BadRequestException("Progress JSON has invalid structure");
+            }
+            catch (BadRequestException)
+            {
+                throw;
+            }
+            catch (JsonException)
+            {
+                throw new BadRequestException("Progress JSON has invalid structure");
+            }
+        }
+
+        private void ValidateQuizMilestoneProgresses(List<QuizMilestoneChallengeProgressInfoDto> progresses)
+        {
+            if (progresses == null)
+                throw new BadRequestException("Progresses is required");
+
+            foreach (var progress in progresses)
+            {
+                if (progress.ThresholdId <= 0)
+                    throw new BadRequestException("Threshold id must be greater than 0");
+            }
+
+            if (progresses.GroupBy(e => e.ThresholdId).Any(g => g.Count() > 1))
+                throw new BadRequestException("Threshold id in progress must be unique");
+        }
+
         
+        #endregion
+
     }
 }

@@ -45,6 +45,7 @@ namespace Feature.Overview.Services
                     u.Id,
                     u.Name,
                     u.AvatarUrl,
+                    u.Level,
                     RankScore = u.Histories
                         .AsQueryable()
                         .Where(rangeFilter).Sum(h => h.RankScoreGained)
@@ -52,13 +53,15 @@ namespace Feature.Overview.Services
 
             return users
                 .OrderByDescending(u => u.RankScore)
+                    .ThenByDescending(u => u.Level)
                 .Select((u, index) => new UserRankListItemDto
                 {
                     UserId = u.Id,
                     DisplayName = u.Name,
                     AvatarUrl = u.AvatarUrl,
                     RankScore = u.RankScore,
-                    Rank = index + 1
+                    Rank = index + 1,
+                    Level = u.Level,
                 })
                 .ToArray();
         }

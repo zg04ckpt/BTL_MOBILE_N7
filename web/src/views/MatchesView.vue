@@ -21,6 +21,7 @@
       :columns="columns"
       :pagination="paginationConfig"
       :data-source="matchesData"
+      :loading="isLoading"
       @change="handleChangePageSize"
       class="text-semi-bold mt-5"
     >
@@ -28,7 +29,7 @@
         <template v-if="column.key === 'time'">
           <div class="flex">
             <span>{{ record.startTime }}</span>
-            <template v-if="record.endTime !== null">
+            <template v-if="record.endTime">
               <span>{{ ` - ${record.endTime}` }}</span>
             </template>
           </div>
@@ -45,9 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
-import { matchesData } from '@/mocks/matches'
+import { onMounted, reactive, ref } from 'vue'
+import { getAllMatches } from '@/api'
 import { EyeOutlined } from '@ant-design/icons-vue'
+import { MatchListItemDto, SearchMatchRequest } from '@/types'
 
 const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
@@ -59,17 +61,75 @@ const columns = [
   { title: 'Hành động', key: 'action', align: 'center' }
 ]
 
+interface MatchTableItem {
+  id: number;
+  startTime: string;
+  endTime: string | null;
+  type: string;
+  numberOfPlayers: number;
+  status: string;
+  topic: string;
+}
+
+const matchesData = ref<MatchTableItem[]>([])
+const isLoading = ref(false)
+
 const paginationConfig = reactive({
   current: 1,
   pageSize: 5,
+  total: 0,
   showSizeChanger: true,
   pageSizeOptions: ['5', '10', '20', '50']
 })
 
-const handleChangePageSize = (pagination: any): void => {
+const formatLocalDateTime = (dateValue?: string | null): string | null => {
+  if (!dateValue) return null
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleString('vi-VN')
+}
+
+const mapToTableItem = (item: MatchListItemDto): MatchTableItem => ({
+  id: item.id,
+  startTime: formatLocalDateTime(item.from) || '-',
+  endTime: formatLocalDateTime(item.to),
+  type: item.battleType,
+  numberOfPlayers: item.numberOfPlayers,
+  status: item.battleStatus,
+  topic: item.topicName || 'Tất cả'
+})
+
+const loadMatches = async (): Promise<void> => {
+  const request: SearchMatchRequest = {
+    pageIndex: paginationConfig.current,
+    pageSize: paginationConfig.pageSize,
+    isAsc: false,
+    orderBy: 'CreatedAt'
+  }
+
+  isLoading.value = true
+  const res = await getAllMatches(request)
+  isLoading.value = false
+
+  if (!res.isSuccess || !res.data) {
+    matchesData.value = []
+    paginationConfig.total = 0
+    return
+  }
+
+  matchesData.value = res.data.items.map(mapToTableItem)
+  paginationConfig.total = res.data.totalItems
+}
+
+const handleChangePageSize = async (pagination: any): Promise<void> => {
   paginationConfig.current = pagination.current
   paginationConfig.pageSize = pagination.pageSize
+  await loadMatches()
 }
+
+onMounted(async () => {
+  await loadMatches()
+})
 </script>
 <style scoped>
 .text-semi-bold {

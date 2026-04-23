@@ -58,12 +58,84 @@ namespace API.Controllers
             return Ok(ApiResponse.Success(result));
         }
 
+        [HttpGet("match-info/{trackingId}")]
+        [Authorize]
+        public async Task<IActionResult> GetMatchInfoByTracking(string trackingId)
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.GetMatchInfoByTrackingAsync(userId, trackingId);
+            return Ok(ApiResponse.Success(result));
+        }
+
+        [HttpPost("solo/start")]
+        [Authorize]
+        public async Task<IActionResult> StartSoloMatch([FromBody] StartSoloMatchRequest request)
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.StartSoloMatchAsync(userId, request);
+            return Ok(ApiResponse.Success(result));
+        }
+
+        [HttpGet("match-state")]
+        [Authorize]
+        public async Task<IActionResult> GetMatchState()
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.GetMatchStateAsync(userId);
+            return Ok(ApiResponse.Success(result));
+        }
+
+        [HttpPost("match-answer")]
+        [Authorize]
+        public async Task<IActionResult> SubmitMatchAnswer([FromBody] SubmitMatchAnswerRequest request)
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            await _matchService.SubmitMatchAnswerAsync(userId, request);
+            return Ok(ApiResponse.Success("Submit answer successfully"));
+        }
+
+        [HttpGet("match-tools/loudspeaker")]
+        [Authorize]
+        public async Task<IActionResult> GetMyLoudspeakerInventory()
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.GetMyLoudspeakerInventoryAsync(userId);
+            return Ok(ApiResponse.Success(result));
+        }
+
+        [HttpPost("match-tools/loudspeaker/use")]
+        [Authorize]
+        public async Task<IActionResult> UseLoudspeaker([FromBody] UseMatchLoudspeakerRequest request)
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.UseLoudspeakerAsync(userId, request);
+            return Ok(ApiResponse.Success("Use loudspeaker successfully", result));
+        }
+
         [HttpGet("match-result")]
         [Authorize]
         public async Task<IActionResult> GetMatchResult()
         {
             var userId = StringUtil.GetUserIdFromClaim(User);
             var result = await _matchService.GetMatchResultAsync(userId);
+            return Ok(ApiResponse.Success(result));
+        }
+
+        [HttpGet("matches/{matchId}/result")]
+        [Authorize]
+        public async Task<IActionResult> GetMatchResultByMatchId(int matchId)
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.GetMatchResultByMatchIdAsync(userId, matchId);
+            return Ok(ApiResponse.Success(result));
+        }
+
+        [HttpGet("matches/{matchId}/review")]
+        [Authorize]
+        public async Task<IActionResult> GetMatchReviewByMatchId(int matchId)
+        {
+            var userId = StringUtil.GetUserIdFromClaim(User);
+            var result = await _matchService.GetMatchReviewByMatchIdAsync(userId, matchId);
             return Ok(ApiResponse.Success(result));
         }
 

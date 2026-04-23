@@ -82,28 +82,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { DownloadOutlined } from '@ant-design/icons-vue'
-import { summaryData } from '@/mocks/statistic'
-import { userData } from '@/mocks/user'
-import { getStatusColor } from '@/utils/helper'
+import dayjs from 'dayjs'
+import { getRecentUsersAnalytics, getSystemAnalytics } from '@/api'
+import type { RecentUserDto } from '@/types'
+import { message } from 'ant-design-vue'
 
 const filterDate = ref<string>('7')
 const dateRange = ref<any>([])
+const analytics = ref<any>(null)
+const userData = ref<RecentUserDto[]>([])
+
 const paginationConfig = reactive({
   current: 1,
   pageSize: 5,
+  total: 0,
   showSizeChanger: true,
   pageSizeOptions: ['5', '10', '20', '50']
 })
 
-const handleExport = (): void => {
-  console.log('Đang xuất dữ liệu cho khoảng ngày:', dateRange.value)
+const buildFilter = () => {
+  const range = dateRange.value as any[]
+  if (Array.isArray(range) && range.length === 2 && range[0] && range[1]) {
+    return {
+      startDate: dayjs(range[0]).toDate(),
+      endDate: dayjs(range[1]).toDate(),
+      lastDays: null
+    }
+  }
+  return {
+    startDate: null,
+    endDate: null,
+    lastDays: Number(filterDate.value)
+  }
 }
 
-const handleChangePageSize = (pagination: any): void => {
+const summaryData = computed(() => {
+  const ov = analytics.value?.overview
+  if (!ov) return []
+  return [
+    { title: 'Người dùng mới', value: ov.newUsers, trend: Math.abs(Math.round(ov.newUsersChangePercent)), isUp: ov.newUsersChangePercent >= 0 },
+    { title: 'Tổng người dùng', value: ov.totalUsers, trend: Math.abs(Math.round(ov.totalUsersChangePercent)), isUp: ov.totalUsersChangePercent >= 0 },
+    { title: 'Tổng đăng ký', value: ov.totalRegistrations, trend: Math.abs(Math.round(ov.totalRegistrationsChangePercent)), isUp: ov.totalRegistrationsChangePercent >= 0 },
+    { title: 'Peak CCU', value: ov.peakCCU, trend: Math.abs(Math.round(ov.peakCCUChangePercent)), isUp: ov.peakCCUChangePercent >= 0 }
+  ]
+})
+
+const lineSeries = computed(() => [
+  {
+    name: 'Người dùng mới',
+    data: (analytics.value?.userTrend ?? []).map((x: any) => x.newUsers)
+  }
+])
+
+const donutSeries = computed(() => {
+  const d = analytics.value?.accountStatusDistribution
+  if (!d) return [0, 0, 0]
+  return [d.active, d.banned, d.inactive]
+})
+
+const handleExport = (): void => {
+  const filter = buildFilter()
+  const query = new URLSearchParams()
+  if (filter.startDate) query.append('startDate', filter.startDate.toISOString())
+  if (filter.endDate) query.append('endDate', filter.endDate.toISOString())
+  if (filter.lastDays) query.append('lastDays', String(filter.lastDays))
+  window.open(`/api/analytics/export?${query.toString()}`, '_blank')
+}
+
+const handleChangePageSize = async (pagination: any): Promise<void> => {
   paginationConfig.current = pagination.current
   paginationConfig.pageSize = pagination.pageSize
+  await loadRecentUsers()
 }
 
 const columns = [
@@ -115,15 +166,12 @@ const columns = [
   { title: 'Tổng số trận', dataIndex: 'matches', key: 'matches' }
 ]
 
-const lineSeries = [{ name: 'Người dùng mới', data: [31, 40, 28, 51, 42, 109, 100] }]
-const donutSeries = [44, 55, 13]
-
 const chartConfigs = reactive({
   lineOptions: {
     chart: { toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
     stroke: { curve: 'smooth', width: 3 },
     colors: ['#1890ff'],
-    xaxis: { categories: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] },
+    xaxis: { categories: [] as string[] },
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } }
   },
   donutOptions: {
@@ -132,6 +180,51 @@ const chartConfigs = reactive({
     legend: { position: 'bottom' },
     plotOptions: { pie: { donut: { size: '70%' } } }
   }
+})
+
+const loadOverview = async () => {
+  const res = await getSystemAnalytics(buildFilter())
+  if (!res.isSuccess || !res.data) {
+    message.error('Không thể tải thống kê tổng quan')
+    return
+  }
+  analytics.value = res.data
+  chartConfigs.lineOptions = {
+    ...chartConfigs.lineOptions,
+    xaxis: {
+      categories: res.data.userTrend.map((x: any) => dayjs(x.date).format('DD/MM'))
+    }
+  }
+}
+
+const loadRecentUsers = async () => {
+  const res = await getRecentUsersAnalytics({
+    pageIndex: paginationConfig.current,
+    pageSize: paginationConfig.pageSize,
+    isAsc: false,
+    orderBy: 'CreatedAt',
+    ...buildFilter()
+  })
+
+  if (!res.isSuccess || !res.data) {
+    message.error('Không thể tải danh sách người dùng gần đây')
+    return
+  }
+
+  userData.value = res.data.items
+  paginationConfig.total = res.data.totalItems
+}
+
+const getStatusColor = (status: string): string => {
+  if (status === 'Active') return 'success'
+  if (status === 'Banned') return 'error'
+  if (status === 'Inactive') return 'warning'
+  return 'default'
+}
+
+onMounted(async () => {
+  await loadOverview()
+  await loadRecentUsers()
 })
 </script>
 

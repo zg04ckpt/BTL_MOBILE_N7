@@ -5,7 +5,6 @@
         <div v-for="event in events" class="col-6">
             <div class="card card-body d-flex flex-row" style="height: 190px;">
                 <img v-if="event.type == EventType.LuckySpin" class="me-2" src="@/assets/images/lucky_spin.png" alt="">
-                <img v-else-if="event.type == EventType.TournamentRewards" class="me-2" src="@/assets/images/tournament_season_rewards.png" alt="">
                 <img v-else-if="event.type == EventType.QuizMilestoneChallenge" class="me-2" src="@/assets/images/quiz_milestone_challenge.png" alt="">
                 <div class="d-flex flex-column">
                     <h4>{{ event.name }}</h4>
@@ -13,7 +12,6 @@
                         <!-- <a-tag color="blue">{{ formatStartTime(event.startTime) }}</a-tag> -->
                         <a-tag color="purple">{{ event.timeType }}</a-tag>
                         <a-tag color="red">{{ getRemainingTime(event.endTime!) }}</a-tag>
-                        <a-tag v-if="event.type == EventType.TournamentRewards" color="#f50">{{ event.tasks.length }} Tasks</a-tag>
                         <a-tag v-if="event.type == EventType.QuizMilestoneChallenge" color="#2db7f5">{{ event.thresholds.length }} Mức</a-tag>
                         <a-tag v-if="event.type == EventType.LuckySpin" color="#87d068">{{ event.spinItems.length }} Vật phẩm</a-tag>
                     </div>
@@ -109,61 +107,18 @@
 
                     <a-button class="me-2" @click="() => {
                         if (selectedEvent.spinItems.length === 0) return;
-                        const randomValues = selectedEvent.spinItems.map(() => Math.random());
-                        const sum = randomValues.reduce((a: any, b: any) => a + b, 0);
+                        if (selectedEvent.spinItems.length === 1) {
+                            selectedEvent.spinItems[0].rate = 100;
+                            return;
+                        }
+                        const cutPoints = Array.from({ length: selectedEvent.spinItems.length - 1 }, () => Math.floor(Math.random() * 101));
+                        cutPoints.sort((a: number, b: number) => a - b);
+                        const points = [0, ...cutPoints, 100];
                         selectedEvent.spinItems.forEach((item: any, index: number) => {
-                            item.rate = (randomValues[index] / sum) * 100;
+                            item.rate = points[index + 1] - points[index];
                         });
                     }">Random tỉ lệ</a-button>
                 </div>
-            </div>
-
-            <!-- Custome for TournamentRewards -->
-            <div v-else-if="selectedEvent.type == EventType.TournamentRewards">
-                <!-- Tasks -->
-                <div class="mb-1">Nhiệm vụ</div>
-                <div v-for="(task, index) in selectedEvent.tasks" class="d-flex flex-column mb-2">
-                    <div class="d-flex flex-row mb-2">
-                        <a-select v-model:value="task.type" @change="(value:any) => task.type = value" class="flex-fill me-2">
-                            <a-select-option :value="TournamentRewardsTaskType.PlayMatch">Thi đấu đội</a-select-option>
-                            <a-select-option :value="TournamentRewardsTaskType.LoseMatch">Thua trận</a-select-option>
-                            <a-select-option :value="TournamentRewardsTaskType.WinMatch">Thắng trận</a-select-option>
-                        </a-select>
-                        <a-input placeholder="SL trận" type="number" v-model:value.number="task.numberOfMatchs" class="me-2 w-25"/>
-                        <a-button :icon="h(MinusOutlined)" style="aspect-ratio: 1/1;" @click="() => selectedEvent.tasks.splice(index, 1)"></a-button>
-                    </div>
-                    <!-- Task rewards -->
-                    <div class="d-flex flex-column">
-                        <div v-for="(r, rindex) in task.rewards" class="d-flex mb-2 align-items-center">
-                            <div class="me-2">- Phần thưởng {{ rindex as number + 1 }}</div>
-                            <a-select class="me-2 flex-fill" v-model:value="r.eventRewardId" @change="(value:any) => r.eventRewardId = value">
-                                <a-select-option v-for="item in rewards" :value="item.id">{{ item.name }}</a-select-option>
-                            </a-select>
-                            <a-input placeholder="Nhập giá trị" type="number" v-model:value.number="r.value" class="me-2 w-25"/>
-                            <a-button :icon="h(MinusOutlined)" style="aspect-ratio: 1/1;" @click="() => task.rewards.splice(rindex, 1)"></a-button>
-                        </div>
-                        <a-button  type="link" size="small" :icon="h(PlusOutlined)" @click="() => {
-                            task.rewards.push({
-                                eventRewardId: 1,
-                                value: 0
-                            });
-                        }">Thêm phần thưởng</a-button>
-                    </div>
-                </div>
-                <a-button type="primary" class="me-2 w-100 mt-2" :icon="h(PlusOutlined)" @click="() => {
-                    selectedEvent.tasks.push({
-                        taskId: -1,
-                        shortDesc: 'Play 5 matches',
-                        rewards: [
-                            {
-                                eventRewardId: 2,
-                                value: 300
-                            }
-                        ],
-                        type: 'PlayMatch',
-                        numberOfMatchs: 5
-                    });
-                }">Thêm nhiệm vụ</a-button>
             </div>
 
             <!-- Custome for QuizMilestoneChallenge -->
@@ -240,7 +195,7 @@
 import { getAllQuestions } from '@/api';
 import { getAllEvents, getAllRewards, updateEvent } from '@/api/event';
 import { QuestionListItemDto } from '@/types';
-import { EventRewardInfoDto, EventType, TournamentRewardsTaskType, UpdateEventRequest } from '@/types/event';
+import { EventRewardInfoDto, EventType, UpdateEventRequest } from '@/types/event';
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { h, onMounted, ref } from 'vue';
@@ -311,32 +266,6 @@ const validateEventForUpdate = (event: any): ValidationResult => {
         }
     }
 
-    if (event.type === EventType.TournamentRewards) {
-        if (!Array.isArray(event.tasks) || event.tasks.length === 0) {
-            return { isValid: false, message: "Tournament Rewards cần ít nhất 1 nhiệm vụ" };
-        }
-
-        for (const task of event.tasks) {
-            if (!task.type || !Object.values(TournamentRewardsTaskType).includes(task.type)) {
-                return { isValid: false, message: "Loại nhiệm vụ không hợp lệ" };
-            }
-            if (!task.numberOfMatchs || task.numberOfMatchs < 1) {
-                return { isValid: false, message: "Số trận của nhiệm vụ phải >= 1" };
-            }
-            if (!Array.isArray(task.rewards) || task.rewards.length === 0) {
-                return { isValid: false, message: "Nhiệm vụ cần ít nhất 1 phần thưởng" };
-            }
-            for (const reward of task.rewards) {
-                if (!reward.eventRewardId || reward.eventRewardId < 1) {
-                    return { isValid: false, message: "Phần thưởng nhiệm vụ không hợp lệ" };
-                }
-                if (reward.value === null || reward.value === undefined || reward.value < 0) {
-                    return { isValid: false, message: "Giá trị phần thưởng nhiệm vụ không hợp lệ" };
-                }
-            }
-        }
-    }
-
     if (event.type === EventType.QuizMilestoneChallenge) {
         if (!Array.isArray(event.thresholds) || event.thresholds.length === 0) {
             return { isValid: false, message: "Quiz Milestone cần ít nhất 1 ngưỡng" };
@@ -378,18 +307,6 @@ const normalizeEventNumbers = (event: any) => {
                     item.reward.value = Number(item.reward.value);
                 }
                 item.rate = Number(item.rate);
-            });
-        }
-    } else if (event.type === EventType.TournamentRewards) {
-        if (Array.isArray(event.tasks)) {
-            event.tasks.forEach((task: any) => {
-                task.numberOfMatchs = Number(task.numberOfMatchs);
-                if (Array.isArray(task.rewards)) {
-                    task.rewards.forEach((reward: any) => {
-                        reward.eventRewardId = Number(reward.eventRewardId);
-                        reward.value = Number(reward.value);
-                    });
-                }
             });
         }
     } else if (event.type === EventType.QuizMilestoneChallenge) {
@@ -443,9 +360,6 @@ const handleUpdate = async () => {
             spinItems: selectedEvent.value.spinItems
         });
 
-    } else if (selectedEvent.value.type === EventType.TournamentRewards) {
-
-        request.eventConfigJsonData = JSON.stringify(selectedEvent.value.tasks);
     } 
 
     const res = await updateEvent(selectedEvent.value.id, request);
@@ -502,7 +416,7 @@ const handleLoadEvent = async () => {
             if (e.endTime) e.endTime = dayjs(e.endTime);
         });
 
-        events.value = res.data!;
+        events.value = (res.data ?? []).filter(e => e.type !== EventType.TournamentRewards);
 
         // selectedEvent.value = res.data![1];
     } else {

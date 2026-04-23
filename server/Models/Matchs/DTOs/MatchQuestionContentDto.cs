@@ -13,5 +13,6 @@ namespace Models.Matchs.DTOs
         public QuestionLevel Level { get; set; }
         public string TopicName { get; set; }
         public List<string> StringAnswers { get; set; }
+        public List<string> CorrectAnswers { get; set; } = new();
     }
 }

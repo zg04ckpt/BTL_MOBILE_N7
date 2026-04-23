@@ -1,5 +1,7 @@
 import { SearchQuestionRequest, SearchUserRequest } from "@/types";
 import { toQueryParams } from "@/utils/helper";
+import { SearchMatchRequest } from "@/types/matches";
+import { AnalyticsFilterRequest, RecentUsersRequest } from "@/types/analytics";
 
 export const endpoints = {
     auth: {
@@ -37,5 +39,15 @@ export const endpoints = {
     settings: {
         getAll: "/api/settings",
         update: "/api/settings"
+    },
+    battles: {
+        paging: (request: SearchMatchRequest) => "/api/battles/paging?" + toQueryParams(request),
+        detail: (id: number) => `/api/battles/${id}`,
+        delete: (id: number) => `/api/battles/${id}`
+    },
+    analytics: {
+        overview: (request: AnalyticsFilterRequest) => "/api/analytics?" + toQueryParams(request),
+        recentUsers: (request: RecentUsersRequest) => "/api/analytics/recent-users?" + toQueryParams(request),
+        export: (request: AnalyticsFilterRequest) => "/api/analytics/export?" + toQueryParams(request)
     }
 }

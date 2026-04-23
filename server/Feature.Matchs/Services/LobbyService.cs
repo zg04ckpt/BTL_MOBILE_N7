@@ -9,11 +9,13 @@ using Models.Matchs.Realtimes;
 using Models.Matchs.Requests;
 using Models.Quizzes.Entities;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Feature.Matchs.Services
 {
     public class LobbyService : ILobbyService
     {
+        private static int _isCloseRoomSubscribed;
         private readonly IMatchRealtimeService _matchRealtimeService;
         private static readonly ConcurrentDictionary<string, LobbyRoomDto> _rooms = new();
         private readonly IUnitOfWork _uow;
@@ -31,7 +33,10 @@ namespace Feature.Matchs.Services
             _logger = logger;
             _scopeFactory = scopeFactory;
 
-            _matchRealtimeService.OnCloseRoom += HandleOnCloseRoom;
+            if (Interlocked.Exchange(ref _isCloseRoomSubscribed, 1) == 0)
+            {
+                _matchRealtimeService.OnCloseRoom += HandleOnCloseRoom;
+            }
         }
 
         public async Task<MatchConfigOptions> GetOptionsAsync()
@@ -88,9 +93,10 @@ namespace Feature.Matchs.Services
 
         public async Task<string> JoinMatchLobbyAsync(int userId, JoinLobbyRequest request)
         {
-            RequireValidJoinOptionsRequest(request);
+            await RequireValidJoinOptionsRequestAsync(request);
 
             var suitableRoom = _rooms.Values.FirstOrDefault(room =>
+                room.BattleType == request.BattleType &&
                 room.ContentType == request.ContentType &&
                 room.TopicId == request.TopicId &&
                 room.MaxPlayers == request.NumberOfPlayers);
@@ -103,6 +109,7 @@ namespace Feature.Matchs.Services
                     Id = Guid.NewGuid().ToString(),
                     MaxPlayers = request.NumberOfPlayers,
                     Status = LobbyRoomStatus.InQueue,
+                    BattleType = request.BattleType,
                     ContentType = request.ContentType,
                     TopicId = request.TopicId,
                 };
@@ -159,9 +166,13 @@ namespace Feature.Matchs.Services
             return suitableRoom.Id;
         }
 
-        private async void HandleOnCloseRoom(object? sender, RealtimeRoomLobbyInfoDto e)
+        private void HandleOnCloseRoom(object? sender, RealtimeRoomLobbyInfoDto e)
         {
-            _matchRealtimeService.OnCloseRoom -= HandleOnCloseRoom;
+            _ = HandleOnCloseRoomAsync(e);
+        }
+
+        private async Task HandleOnCloseRoomAsync(RealtimeRoomLobbyInfoDto e)
+        {
             try
             {
                 if (_rooms.TryGetValue(e.RoomLobbyId, out var room))
@@ -183,12 +194,26 @@ namespace Feature.Matchs.Services
             }
         }
 
-        private void RequireValidJoinOptionsRequest(JoinLobbyRequest request)
+        private async Task RequireValidJoinOptionsRequestAsync(JoinLobbyRequest request)
         {
             var defaultPlayers = new[] { 1, 2, 5, 10 }; 
             if (!defaultPlayers.Contains(request.NumberOfPlayers))
             {
                 throw new BadRequestException("Number of players must be in 1, 2, 5, 10");
+            }
+
+            if (request.ContentType == MatchContentType.OnlyOne)
+            {
+                if (request.TopicId == null || request.TopicId <= 0)
+                {
+                    throw new BadRequestException("TopicId is required when ContentType is OnlyOne");
+                }
+
+                var topicExists = await _uow.Repository<Topic>().GetFirstAsync(e => e.Id == request.TopicId) != null;
+                if (!topicExists)
+                {
+                    throw new BadRequestException($"Topic {request.TopicId} not found");
+                }
             }
         }
     }

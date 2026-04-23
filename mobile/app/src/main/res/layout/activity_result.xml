@@ -20,11 +20,11 @@
     <!-- Vòng tròn điểm -->
     <FrameLayout
         android:id="@+id/fl_score"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
         android:layout_below="@id/tv_title"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp">
+        android:layout_marginTop="12dp">
 
         <View
             android:layout_width="match_parent"
@@ -42,9 +42,9 @@
                 android:id="@+id/tv_score"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="120"
+                android:text="0"
                 android:textColor="@color/color5"
-                android:textSize="52sp"
+                android:textSize="48sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -56,18 +56,9 @@
                     android:id="@+id/tv_correct"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="8 đúng"
+                    android:text="0 đúng"
                     android:textColor="@color/color7"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="1 sai"
-                    android:textColor="@color/color6"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
@@ -75,167 +66,72 @@
 
     <!-- Thông báo chờ -->
     <TextView
-        android:id="@+id/tv_waiting"
+        android:id="@+id/tv_waiting_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/fl_score"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="16dp"
         android:gravity="center"
         android:paddingHorizontal="32dp"
-        android:text="Vui lòng chờ đối thủ của bạn hoàn thành để tiến hành xếp hạng"
+        android:text="Vui lòng chờ đối thủ..."
         android:textColor="@color/color1"
-        android:textSize="20sp"
+        android:textSize="16sp"
         android:textStyle="bold" />
 
     <!-- Card Tiến trình -->
-    <LinearLayout
+    <androidx.cardview.widget.CardView
         android:id="@+id/ll_progress_card"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tv_waiting"
+        android:layout_height="0dp"
+        android:layout_above="@id/btn_home"
+        android:layout_below="@id/tv_waiting_status"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="20dp"
-        android:background="@drawable/bg_progress_card"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="12dp"
-            android:text="Tiến trình"
-            android:textColor="@color/color2"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <!-- Player 1 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/bg_player_row"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="8dp">
-
-            <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:contentDescription="avatar"
-                android:background="@drawable/bg_avatar_circle"
-                android:scaleType="centerCrop"
-                android:src="@drawable/avatar_current_user" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="Hoàng Cao Nguyên"
-                android:textColor="@color/color11"
-                android:textSize="17sp"
-                android:textStyle="bold" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@drawable/bg_progress_card">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="6/10"
-                android:textColor="@color/color2"
-                android:textSize="17sp"
-                android:textStyle="bold"/>
-        </LinearLayout>
-
-        <!-- Player 2 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/bg_player_row"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="8dp">
-
-            <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:contentDescription="avatar"
-                android:background="@drawable/bg_avatar_circle"
-                android:scaleType="centerCrop"
-                android:src="@drawable/avatar_current_user" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="Hoàng Cao Nguyên"
-                android:textColor="@color/color11"
-                android:textSize="17sp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp"
+                android:text="Tiến trình trận đấu"
+                android:textColor="@color/white"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="6/10"
-                android:textColor="@color/color2"
-                android:textSize="17sp"
-                android:textStyle="bold"/>
+            <ListView
+                android:id="@+id/lv_match_progress"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@android:color/transparent"
+                android:dividerHeight="8dp" />
         </LinearLayout>
-
-        <!-- Player 3 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_player_row"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="8dp">
-
-            <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:contentDescription="avatar"
-                android:background="@drawable/bg_avatar_circle"
-                android:scaleType="centerCrop"
-                android:src="@drawable/avatar_current_user" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="Hoàng Cao Nguyên"
-                android:textColor="@color/color11"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="6/10"
-                android:textColor="@color/color2"
-                android:textSize="17sp"
-                android:textStyle="bold"/>
-        </LinearLayout>
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <!-- Nút Về trang chủ -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_home"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="48dp"
         android:layout_alignParentBottom="true"
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="24dp"
-        android:layout_marginTop="16dp"
         android:background="@drawable/bg_button_red"
-        android:backgroundTint="@null"
         android:text="Về trang chủ"
-        android:textColor="@color/color2"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
         android:textSize="16sp"
         android:textStyle="bold" />
 
 </RelativeLayout>
-

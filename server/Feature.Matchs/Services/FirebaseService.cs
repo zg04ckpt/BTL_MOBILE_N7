@@ -43,6 +43,15 @@ namespace Feature.Matchs.Services
                     RoomLobbyId = room.Id,
                     MaxPlayers = room.MaxPlayers,
                     Players = new(),
+                    StartTriggered = false,
+                    Events = new()
+                    {
+                        new MatchRealtimeEventDto
+                        {
+                            Type = MatchRealtimeEventTypes.LobbyCreated,
+                            Message = "Lobby created"
+                        }
+                    },
                     StatusLogs = new()
                     {
                         "Bắt đầu khởi tạo phòng ghép"
@@ -64,35 +73,93 @@ namespace Feature.Matchs.Services
             {
                 var docRef = _db.Collection("lobby-rooms").Document(roomId);
 
-                var snapshot = await docRef.GetSnapshotAsync();
-                if (!snapshot.Exists)
+                var transactionResult = await _db.RunTransactionAsync(async transaction =>
                 {
-                    _logService.LogError($"Failed to add player to room {roomId} because it not exist");
+                    var snapshot = await transaction.GetSnapshotAsync(docRef);
+                    if (!snapshot.Exists)
+                    {
+                        return (ok: false, shouldStart: false, room: (RealtimeRoomLobbyInfoDto?)null);
+                    }
+
+                    var room = snapshot.ConvertTo<RealtimeRoomLobbyInfoDto>();
+                    room.Events ??= new();
+                    room.StatusLogs ??= new();
+                    room.Players ??= new();
+
+                    if (room.Players.Any(u => u.UserId == player.UserId))
+                    {
+                        return (ok: true, shouldStart: false, room: room);
+                    }
+
+                    if (room.Players.Count >= room.MaxPlayers)
+                    {
+                        return (ok: false, shouldStart: false, room: room);
+                    }
+
+                    room.Players.Add(player);
+                    room.StatusLogs.Add($"{player.DisplayName} đã tham gia vào phòng");
+                    room.Events.Add(new MatchRealtimeEventDto
+                    {
+                        Type = MatchRealtimeEventTypes.PlayerJoined,
+                        Message = $"{player.DisplayName} joined lobby"
+                    });
+
+                    var shouldStart = false;
+                    if (room.Players.Count == room.MaxPlayers && !room.StartTriggered)
+                    {
+                        shouldStart = true;
+                        room.StartTriggered = true;
+                        var countdownSeconds = room.MaxPlayers == 1 ? 0 : 5;
+                        room.StatusLogs.Add(countdownSeconds == 0
+                            ? "Đã đủ người, trận đấu bắt đầu ngay"
+                            : $"Đã đủ người, trận đấu sẽ bắt đầu sau {countdownSeconds}s");
+                        room.Events.Add(new MatchRealtimeEventDto
+                        {
+                            Type = MatchRealtimeEventTypes.MatchFound,
+                            Message = countdownSeconds == 0
+                                ? "Match found, starting immediately"
+                                : "Match found, starting countdown"
+                        });
+                    }
+
+                    transaction.Update(docRef, new Dictionary<string, object>
+                    {
+                        { nameof(room.Players), room.Players },
+                        { nameof(room.StatusLogs), room.StatusLogs },
+                        { nameof(room.Events), room.Events },
+                        { nameof(room.StartTriggered), room.StartTriggered }
+                    });
+
+                    return (ok: true, shouldStart: shouldStart, room: room);
+                });
+
+                if (!transactionResult.ok)
+                {
+                    _logService.LogError($"Failed to add player to room {roomId}");
                     return false;
                 }
 
-                RealtimeRoomLobbyInfoDto room = snapshot.ConvertTo<RealtimeRoomLobbyInfoDto>();
-                if (room.Players.Count == room.MaxPlayers)
-                {
-                    _logService.LogError($"Failed to add player to room {roomId} because has no slot in lobby room");
-                    return false;
-                }
-
-                // Update status
-                room.Players.Add(player);
-                room.StatusLogs.Add($"{player.DisplayName} đã tham gia vào phòng");
-                await docRef.UpdateAsync(nameof(room.Players), room.Players);
-                await docRef.UpdateAsync(nameof(room.StatusLogs), room.StatusLogs);
-
-                // If reach the limit, close room after 5s
-                if (room.Players.Count == room.MaxPlayers)
+                if (transactionResult.shouldStart && transactionResult.room != null)
                 {
                     _ = Task.Run(async () =>
                     {
-                        room.StatusLogs.Add($"Đã đủ người, trận đấu sẽ bắt đầu sau 5s");
-                        await docRef.UpdateAsync(nameof(room.StatusLogs), room.StatusLogs);
-                        await Task.Delay(5000);
-                        await CloseLobbyRoomToStartMatchAsync(docRef, room);
+                        var countdownSeconds = transactionResult.room.MaxPlayers == 1 ? 0 : 5;
+                        if (countdownSeconds > 0)
+                        {
+                            await Task.Delay(countdownSeconds * 1000);
+                        }
+
+                        var latestSnapshot = await docRef.GetSnapshotAsync();
+                        if (!latestSnapshot.Exists)
+                        {
+                            return;
+                        }
+
+                        var latestRoom = latestSnapshot.ConvertTo<RealtimeRoomLobbyInfoDto>();
+                        if (latestRoom.Players.Count == latestRoom.MaxPlayers && latestRoom.StartTriggered)
+                        {
+                            await CloseLobbyRoomToStartMatchAsync(docRef, latestRoom);
+                        }
                     });
                 }
 
@@ -111,26 +178,49 @@ namespace Feature.Matchs.Services
             {
                 var docRef = _db.Collection("lobby-rooms").Document(roomId);
 
-                var snapshot = await docRef.GetSnapshotAsync();
-                if (!snapshot.Exists)
+                return await _db.RunTransactionAsync(async transaction =>
                 {
-                    _logService.LogError($"Failed to add player to room {roomId} because it not exist");
-                    return false;
-                }
+                    var snapshot = await transaction.GetSnapshotAsync(docRef);
+                    if (!snapshot.Exists)
+                    {
+                        _logService.LogError($"Failed to remove player from room {roomId} because it not exist");
+                        return false;
+                    }
 
-                RealtimeRoomLobbyInfoDto room = snapshot.ConvertTo<RealtimeRoomLobbyInfoDto>();
-                var player = room.Players.FirstOrDefault(u => u.UserId == playerId);
-                if (player == null)
-                {
-                    _logService.LogError($"Failed to remove player from room {roomId}: Player not found");
-                    return false;
-                }
-                room.Players.Remove(player);
-                room.StatusLogs.Add($"{player.DisplayName} đã thoát khỏi phòng");
-                await docRef.UpdateAsync(nameof(room.Players), room.Players);
-                await docRef.UpdateAsync(nameof(room.StatusLogs), room.StatusLogs);
+                    RealtimeRoomLobbyInfoDto room = snapshot.ConvertTo<RealtimeRoomLobbyInfoDto>();
+                    room.Events ??= new();
+                    room.StatusLogs ??= new();
+                    room.Players ??= new();
 
-                return true;
+                    var player = room.Players.FirstOrDefault(u => u.UserId == playerId);
+                    if (player == null)
+                    {
+                        _logService.LogError($"Failed to remove player from room {roomId}: Player not found");
+                        return false;
+                    }
+
+                    room.Players.Remove(player);
+                    if (room.Players.Count < room.MaxPlayers)
+                    {
+                        room.StartTriggered = false;
+                    }
+                    room.StatusLogs.Add($"{player.DisplayName} đã thoát khỏi phòng");
+                    room.Events.Add(new MatchRealtimeEventDto
+                    {
+                        Type = MatchRealtimeEventTypes.PlayerLeft,
+                        Message = $"{player.DisplayName} left lobby"
+                    });
+
+                    transaction.Update(docRef, new Dictionary<string, object>
+                    {
+                        { nameof(room.Players), room.Players },
+                        { nameof(room.StatusLogs), room.StatusLogs },
+                        { nameof(room.Events), room.Events },
+                        { nameof(room.StartTriggered), room.StartTriggered }
+                    });
+
+                    return true;
+                });
             }
             catch (Exception ex)
             {
@@ -149,6 +239,14 @@ namespace Feature.Matchs.Services
                     StatusLogs = new List<string>
                     {
                         "Bắt đầu thi đấu sau 3s"
+                    },
+                    Events = new List<MatchRealtimeEventDto>
+                    {
+                        new MatchRealtimeEventDto
+                        {
+                            Type = MatchRealtimeEventTypes.MatchCreated,
+                            Message = "Match room created"
+                        }
                     },
                     Answers = new List<MatchPlayerAnswerDto>(),
                     Players = players.Select(e => new MatchPlayerInfoDto
@@ -179,11 +277,21 @@ namespace Feature.Matchs.Services
                         return;
                     }
                     var data = snapshot.ConvertTo<MatchRoomDto>();
+                    data.Events ??= new();
                     if (data.Answers.Count > 0)
                     {
+                        data.Events.Add(new MatchRealtimeEventDto
+                        {
+                            Type = MatchRealtimeEventTypes.AnswerSubmitted,
+                            Message = $"Received {data.Answers.Count} answer(s)"
+                        });
                         OnPlayerPickAnswer?.Invoke(this, (trackingId, data.Answers));
                         data.Answers.Clear();
-                        await docRef.UpdateAsync("Answers", data.Answers);
+                        await docRef.UpdateAsync(new Dictionary<string, object>
+                        {
+                            { nameof(data.Answers), data.Answers },
+                            { nameof(data.Events), data.Events }
+                        });
                     }
                 });
 
@@ -200,6 +308,24 @@ namespace Feature.Matchs.Services
             
         }
 
+        public async Task<bool> AddPlayerAnswerAsync(string trackingId, MatchPlayerAnswerDto answer)
+        {
+            try
+            {
+                var docRef = _db.Collection("match-rooms").Document(trackingId);
+                await docRef.UpdateAsync(new Dictionary<string, object>
+                {
+                    { nameof(MatchRoomDto.Answers), FieldValue.ArrayUnion(answer) }
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"Failed to append answer for match {trackingId}: {ex.Message}");
+                return false;
+            }
+        }
+
         public async Task<bool> UpdateLeaderboardAsync(string trackingId, List<UserMappingDto> updatedUsers)
         {
             try
@@ -213,6 +339,7 @@ namespace Feature.Matchs.Services
                 }
 
                 var room = snapshot.ConvertTo<MatchRoomDto>();
+                room.Events ??= new();
 
                 // Snapshot old ranks before any update
                 var oldRanks = room.Players.ToDictionary(p => p.UserId, p => p.Rank);
@@ -250,7 +377,15 @@ namespace Feature.Matchs.Services
                 await docRef.UpdateAsync(new Dictionary<string, object>
                 {
                     { nameof(room.Players), room.Players },
-                    { nameof(room.StatusLogs), room.StatusLogs }
+                    { nameof(room.StatusLogs), room.StatusLogs },
+                    {
+                        nameof(room.Events),
+                        room.Events.Append(new MatchRealtimeEventDto
+                        {
+                            Type = MatchRealtimeEventTypes.LeaderboardUpdated,
+                            Message = $"Leaderboard updated for {updatedUsers.Count} player(s)"
+                        }).ToList()
+                    }
                 });
 
                 return true;
@@ -274,6 +409,43 @@ namespace Feature.Matchs.Services
             catch (Exception ex)
             {
                 _logService.LogError($"Failed to close match room {trackingId}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> AppendMatchEventAsync(string trackingId, MatchRealtimeEventDto matchEvent, string? statusLog = null)
+        {
+            try
+            {
+                var docRef = _db.Collection("match-rooms").Document(trackingId);
+                var snapshot = await docRef.GetSnapshotAsync();
+                if (!snapshot.Exists)
+                {
+                    _logService.LogError($"Failed to append event: match room {trackingId} not found");
+                    return false;
+                }
+
+                var room = snapshot.ConvertTo<MatchRoomDto>();
+                room.Events ??= new();
+                room.StatusLogs ??= new();
+
+                room.Events.Add(matchEvent);
+                if (!string.IsNullOrWhiteSpace(statusLog))
+                {
+                    room.StatusLogs.Add(statusLog);
+                }
+
+                await docRef.UpdateAsync(new Dictionary<string, object>
+                {
+                    { nameof(room.Events), room.Events },
+                    { nameof(room.StatusLogs), room.StatusLogs }
+                });
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"Failed to append event for match {trackingId}: {ex.Message}");
                 return false;
             }
         }
