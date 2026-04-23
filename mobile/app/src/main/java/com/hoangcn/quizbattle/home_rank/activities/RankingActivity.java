@@ -2,6 +2,7 @@ package com.hoangcn.quizbattle.home_rank.activities;
 
 import static android.view.View.GONE;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -58,6 +59,7 @@ public class RankingActivity extends AppCompatActivity {
     private List<UserRankListItem> rankListItems = new ArrayList<>();
 
     private Button btnBackToGame;
+    private MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +71,34 @@ public class RankingActivity extends AppCompatActivity {
         initViews();
         setListeners();
         initData();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(this, R.raw.rank);
+            mediaPlayer.setLooping(true);
+        }
+        mediaPlayer.start();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     private void initData() {
