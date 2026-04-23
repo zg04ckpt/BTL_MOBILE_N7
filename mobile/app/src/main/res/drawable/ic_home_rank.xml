@@ -3,16 +3,14 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-  <!-- Medal with ribbon -->
+  <!-- Material Design: workspace_premium / medal with ribbon -->
+  <!-- Ribbon top left -->
   <path
       android:fillColor="#9C27B0"
-      android:pathData="M12,2c-1.1,0 -2,0.9 -2,2c0,1.1 0.9,2 2,2s2,-0.9 2,-2C14,2.9 13.1,2 12,2zM12,8c-2.21,0 -4,1.79 -4,4c0,2.21 1.79,4 4,4s4,-1.79 4,-4C16,9.79 14.21,8 12,8zM12,18c-1.1,0 -2,0.9 -2,2s0.9,2 2,2s2,-0.9 2,-2S13.1,18 12,18z"/>
-  <!-- Ribbon left -->
+      android:pathData="M12,2L9.5,7.5L4,8.27L8,12.14L7.06,17.6L12,14.9L16.94,17.6L16,12.14
+          L20,8.27L14.5,7.5Z"/>
+  <!-- Stem/ribbon hang -->
   <path
-      android:fillColor="#9C27B0"
-      android:pathData="M8,4c-1.1,0 -2,0.9 -2,2v8c0,1.1 0.9,2 2,2c1.1,0 2,-0.9 2,-2V6C10,4.9 9.1,4 8,4z"/>
-  <!-- Ribbon right -->
-  <path
-      android:fillColor="#9C27B0"
-      android:pathData="M16,4c-1.1,0 -2,0.9 -2,2v8c0,1.1 0.9,2 2,2c1.1,0 2,-0.9 2,-2V6C18,4.9 17.1,4 16,4z"/>
+      android:fillColor="#7B1FA2"
+      android:pathData="M9,17.5V22l3-1.5L15,22v-4.5L12,19z"/>
 </vector>

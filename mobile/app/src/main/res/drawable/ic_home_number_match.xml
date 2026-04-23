@@ -3,11 +3,28 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-  <!-- Crossed swords -->
+  <!-- Crossed swords (X pattern) -->
+  <!-- Sword 1: top-left to bottom-right -->
   <path
-      android:fillColor="#2196F3"
-      android:pathData="M3.5,2l14.21,14.21 -2.12,2.12L3.5,4.12V2zM20.5,2v2.12l-14.21,14.21 2.12,2.12L20.5,6.24V2z"/>
+      android:fillColor="#3F51B5"
+      android:strokeColor="#3F51B5"
+      android:strokeWidth="1.5"
+      android:pathData="M4,4 L8,8 M16,16 L20,20"/>
   <path
-      android:fillColor="#2196F3"
-      android:pathData="M2,3.5h2.12l5.08,5.08L7.08,10.7 2,5.62V3.5zM22,3.5v2.12l-5.08,5.08 2.12,2.12L22,5.62V3.5zM2,20.5v-2.12l5.08,-5.08 -2.12,-2.12L2,18.38V20.5zM22,20.5l-5.08,-5.08 -2.12,2.12L19.88,22.62 22,20.5z"/>
+      android:fillColor="#3F51B5"
+      android:pathData="M3,3 L9.5,9.5 L8,11 L2,5 Z"/>
+  <path
+      android:fillColor="#3F51B5"
+      android:pathData="M21,21 L14.5,14.5 L16,13 L22,19 Z"/>
+  <!-- Sword 2: top-right to bottom-left -->
+  <path
+      android:fillColor="#3F51B5"
+      android:pathData="M21,3 L14.5,9.5 L13,8 L19,2 Z"/>
+  <path
+      android:fillColor="#3F51B5"
+      android:pathData="M3,21 L9.5,14.5 L8,13 L2,19 Z"/>
+  <!-- Center diamond -->
+  <path
+      android:fillColor="#3F51B5"
+      android:pathData="M12,10.5 L13.5,12 L12,13.5 L10.5,12 Z"/>
 </vector>
