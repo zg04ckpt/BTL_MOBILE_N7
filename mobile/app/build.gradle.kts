@@ -9,9 +9,6 @@ android {
         version = release(36)
     }
 
-    lint {
-        baseline = file("lint-baseline.xml")
-    }
 
     defaultConfig {
         applicationId = "com.hoangcn.quizbattle"
