@@ -1,12 +1,16 @@
 package com.hoangcn.quizbattle.events.activities;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,6 +27,7 @@ import com.hoangcn.quizbattle.events.models.EventProgressModel;
 import com.hoangcn.quizbattle.events.models.RewardModel;
 import com.hoangcn.quizbattle.events.models.quizmilestone.ThresholdProgressModel;
 import com.hoangcn.quizbattle.events.utils.ConvertUtil;
+import com.hoangcn.quizbattle.events.utils.RewardUtil;
 import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
 
@@ -40,6 +45,8 @@ public class QuizMilestoneChallengeActivity extends AppCompatActivity {
     private List<ThresholdProgressModel> progresses = new ArrayList<>();
     private EventModel event;
     private QuizMilestoneEventThresholdAdapter adapter;
+    private MediaPlayer rewardMusic;
+    private MediaPlayer entryMusic;
 
     TextView tvProgress;
     Button btnBack;
@@ -58,6 +65,33 @@ public class QuizMilestoneChallengeActivity extends AppCompatActivity {
         initViews();
         setListeners();
         initData();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        playEntrySound();
+    }
+
+    private void playEntrySound() {
+        if (entryMusic == null) {
+            entryMusic = MediaPlayer.create(this, R.raw.event_home);
+            entryMusic.setLooping(false);
+        }
+        entryMusic.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (rewardMusic != null) {
+            rewardMusic.release();
+            rewardMusic = null;
+        }
+        if (entryMusic != null) {
+            entryMusic.release();
+            entryMusic = null;
+        }
     }
 
     private void initViews() {
@@ -173,14 +207,18 @@ public class QuizMilestoneChallengeActivity extends AppCompatActivity {
         eventService.claimReward(request, new ApiCallback<>(){
             @Override
             public void onSuccess(ApiResponse<EventProgressModel> data) {
+                var threshold = event.getThresholds().stream()
+                        .filter(t -> t.getThresholdId() == thresholdId)
+                        .findFirst()
+                        .orElse(null);
+
                 progresses.clear();
                 progresses.addAll(data.getData().getThresholdProgresses());
                 runOnUiThread(() -> {
-                    Toast.makeText(
-                            QuizMilestoneChallengeActivity.this,
-                            "Nhận phần thưởng thành công",
-                            Toast.LENGTH_SHORT
-                    ).show();
+                    if (threshold != null && threshold.getRewards() != null && !threshold.getRewards().isEmpty()) {
+                        var firstReward = threshold.getRewards().get(0);
+                        showRewardDialog(firstReward.getEventRewardId(), firstReward.getValue());
+                    }
                     adapter.notifyDataSetChanged();
                 });
             }
@@ -196,6 +234,45 @@ public class QuizMilestoneChallengeActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private void showRewardDialog(int rewardId, int value) {
+        if (rewardMusic == null) {
+            rewardMusic = MediaPlayer.create(this, R.raw.reward_event);
+            rewardMusic.setLooping(false); // Chỉ chạy 1 lần
+        }
+        if (rewardMusic.isPlaying()) {
+            rewardMusic.pause();
+            rewardMusic.seekTo(0);
+        }
+        rewardMusic.start();
+
+        RewardModel reward = rewards.get(rewardId);
+
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_reward, null);
+        TextView tvRewardName = dialogView.findViewById(R.id.tvRewardName);
+        TextView tvRewardValue = dialogView.findViewById(R.id.tvRewardValue);
+        ImageView ivRewardIcon = dialogView.findViewById(R.id.ivRewardIcon);
+        Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+
+        tvRewardName.setText(reward.getName());
+        tvRewardValue.setText("+ " + value);
+        ivRewardIcon.setImageResource(RewardUtil.getRewardIcon(reward));
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.TransparentDialog)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        btnConfirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (rewardMusic != null && rewardMusic.isPlaying()) {
+                rewardMusic.pause();
+                rewardMusic.seekTo(0);
+            }
+        });
+
+        dialog.show();
     }
 
     private void getRewardInfos() {

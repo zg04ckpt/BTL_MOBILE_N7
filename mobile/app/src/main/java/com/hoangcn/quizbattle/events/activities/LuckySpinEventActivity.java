@@ -1,14 +1,18 @@
 package com.hoangcn.quizbattle.events.activities;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.hoangcn.quizbattle.R;
@@ -44,6 +48,10 @@ public class LuckySpinEventActivity extends AppCompatActivity {
 
     private float currentDegree = 0f;
 
+    private MediaPlayer bgMusic;
+    private MediaPlayer spinMusic;
+    private MediaPlayer rewardMusic;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +64,43 @@ public class LuckySpinEventActivity extends AppCompatActivity {
         setListeners();
         initData();
         renderSpinInfo();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (bgMusic == null) {
+            bgMusic = MediaPlayer.create(this, R.raw.event_cirle_round);
+            bgMusic.setLooping(true);
+        }
+        bgMusic.start();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (bgMusic != null && bgMusic.isPlaying()) {
+            bgMusic.pause();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (bgMusic != null) {
+            bgMusic.stop();
+            bgMusic.release();
+            bgMusic = null;
+        }
+        if (spinMusic != null) {
+            spinMusic.stop();
+            spinMusic.release();
+            spinMusic = null;
+        }
+        if (rewardMusic != null) {
+            rewardMusic.release();
+            rewardMusic = null;
+        }
     }
 
     private void renderSpinItems() {
@@ -132,6 +177,11 @@ public class LuckySpinEventActivity extends AppCompatActivity {
 
     private void handleSpinClick() {
         btnSpin.setVisibility(View.GONE);
+        // Tạm dừng nhạc nền để tập trung vào tiếng quay
+        if (bgMusic != null && bgMusic.isPlaying()) {
+            bgMusic.pause();
+        }
+
         Executors.newSingleThreadExecutor().execute(() -> {
             eventService.getWinSpinItem(event.getId(), new ApiCallback<WinSpinItemModel>() {
                 @Override
@@ -154,10 +204,15 @@ public class LuckySpinEventActivity extends AppCompatActivity {
     }
 
     private void spinToSegment(SpinItemModel chosenItem) {
-        float segmentAngle = 360f / event.getSpinItems().size(); // góc chiếm một khoảng bn
-        float offsetToCenter = segmentAngle / 2f;   // phần bù để nó chỉ đến giữa
-        float angleToTarget = 360f - ((chosenItem.getItemId() * segmentAngle) + offsetToCenter); // góc quay cần thiết
-        float targetDegree = angleToTarget + (5 * 360); // 5 vòng quay quán tính
+        if (spinMusic == null) {
+            spinMusic = MediaPlayer.create(this, R.raw.spinning_event);
+        }
+        spinMusic.start();
+
+        float segmentAngle = 360f / event.getSpinItems().size();
+        float offsetToCenter = segmentAngle / 2f;
+        float angleToTarget = 360f - ((chosenItem.getItemId() * segmentAngle) + offsetToCenter);
+        float targetDegree = angleToTarget + (8 * 360); // 8 vòng để đủ 5 giây
 
         RotateAnimation rotateAnim = new RotateAnimation(
                 currentDegree % 360, targetDegree,
@@ -165,7 +220,7 @@ public class LuckySpinEventActivity extends AppCompatActivity {
                 Animation.RELATIVE_TO_SELF, 0.5f
         );
 
-        rotateAnim.setDuration(4000);
+        rotateAnim.setDuration(5000); // Đặt đúng 5 giây
         rotateAnim.setFillAfter(true);
         rotateAnim.setInterpolator(new DecelerateInterpolator());
 
@@ -175,12 +230,12 @@ public class LuckySpinEventActivity extends AppCompatActivity {
 
             @Override
             public void onAnimationEnd(Animation animation) {
+                if (spinMusic != null && spinMusic.isPlaying()) {
+                    spinMusic.pause();
+                    spinMusic.seekTo(0);
+                }
                 currentDegree = targetDegree;
-                Toast.makeText(
-                    LuckySpinEventActivity.this,
-                    "Đã trúng: " + rewards.get(chosenItem.getReward().getEventRewardId()).getName()
-                            + " + " + chosenItem.getReward().getValue(),
-                    Toast.LENGTH_SHORT).show();
+                showRewardDialog(chosenItem);
 
                 remainingSpinTime--;
                 renderSpinInfo();
@@ -191,6 +246,59 @@ public class LuckySpinEventActivity extends AppCompatActivity {
         });
 
         wheelBody.startAnimation(rotateAnim);
+    }
+
+    private void showRewardDialog(SpinItemModel chosenItem) {
+        // Dừng nhạc quay nếu vẫn còn chạy
+        if (spinMusic != null && spinMusic.isPlaying()) {
+            spinMusic.stop();
+            try {
+                spinMusic.prepare();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (rewardMusic == null) {
+            rewardMusic = MediaPlayer.create(this, R.raw.reward_event);
+            rewardMusic.setLooping(false); // Đảm bảo chỉ chạy 1 lần
+        }
+        rewardMusic.start();
+
+        RewardModel reward = rewards.get(chosenItem.getReward().getEventRewardId());
+        
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_reward, null);
+        TextView tvRewardName = dialogView.findViewById(R.id.tvRewardName);
+        TextView tvRewardValue = dialogView.findViewById(R.id.tvRewardValue);
+        ImageView ivRewardIcon = dialogView.findViewById(R.id.ivRewardIcon);
+        Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+
+        tvRewardName.setText(reward.getName());
+        tvRewardValue.setText("+ " + chosenItem.getReward().getValue());
+        ivRewardIcon.setImageResource(RewardUtil.getRewardIcon(reward));
+
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.TransparentDialog)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        btnConfirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            // Dừng nhạc thưởng khi đóng dialog và tiếp tục nhạc nền
+            if (rewardMusic != null && rewardMusic.isPlaying()) {
+                rewardMusic.pause();
+                rewardMusic.seekTo(0);
+            }
+            if (bgMusic != null) {
+                bgMusic.start();
+            }
+
+            if (remainingSpinTime > 0) {
+                btnSpin.setVisibility(View.VISIBLE);
+            }
+        });
+
+        dialog.show();
     }
 
     private void initViews() {
