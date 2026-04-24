@@ -28,7 +28,8 @@ public class WaitResultActivity extends AppCompatActivity {
     private BattleService battleService;
     private TextView tvWaitingStatus;
     private TextView tvScore;
-    private TextView tvCorrect;
+    private TextView tvCorrectCount;
+    private TextView tvWrongCount;
     private boolean isActive = true;
     private boolean allPlayersFinished = false;
     private boolean pendingNavigateToResult = false;
@@ -54,7 +55,8 @@ public class WaitResultActivity extends AppCompatActivity {
         myUserId = SharedPreferenceUtil.getInstance(this).getInt("userId", -1);
         tvWaitingStatus = findViewById(R.id.tv_waiting_status);
         tvScore = findViewById(R.id.tv_score);
-        tvCorrect = findViewById(R.id.tv_correct);
+        tvCorrectCount = findViewById(R.id.tv_correct_count);
+        tvWrongCount = findViewById(R.id.tv_wrong_count);
         ListView lvProgress = findViewById(R.id.lv_match_progress);
         Button btnHome = findViewById(R.id.btn_home);
 
@@ -90,7 +92,7 @@ public class WaitResultActivity extends AppCompatActivity {
                     if (allPlayersFinished) {
                         tvWaitingStatus.setText("Tất cả đã hoàn thành, đang tổng kết kết quả...");
                     } else {
-                        tvWaitingStatus.setText("Đang cập nhật realtime: " + state.getUsers().size() + " người chơi");
+                        tvWaitingStatus.setText("Đang cập nhật trạng trái " + state.getUsers().size() + " người chơi");
                     }
 
                     ListView lvProgress = findViewById(R.id.lv_match_progress);
@@ -128,7 +130,8 @@ public class WaitResultActivity extends AppCompatActivity {
         // Sai = số câu đã làm - số câu đúng.
         int wrong = Math.max(0, me.getProgress() - safeCorrect);
         tvScore.setText(String.valueOf(Math.max(0, me.getScore())));
-        tvCorrect.setText(safeCorrect + " đúng • " + wrong + " sai");
+        tvCorrectCount.setText(String.valueOf(safeCorrect));
+        tvWrongCount.setText(String.valueOf(wrong));
     }
 
     @Override

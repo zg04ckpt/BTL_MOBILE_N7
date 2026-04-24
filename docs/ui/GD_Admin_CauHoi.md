@@ -2,72 +2,73 @@
 
 ## 1. MỤC ĐÍCH
 
-Giao diện Quản lý câu hỏi dùng để thêm mới, chỉnh sửa, duyệt và quản lý ngân hàng câu hỏi của hệ thống.
+Giao diện dùng để tìm kiếm, lọc, cập nhật, xóa câu hỏi và import hàng loạt bằng Excel.
 
 ## 2. CÁC THÀNH PHẦN GIAO DIỆN
 
 ### 2.1. Phần Header & Công Cụ
-- Tiêu đề: "Ngân hàng câu hỏi"
-- Nút "Thêm câu hỏi mới": Primary button
-- Nút "Import Excel": Hỗ trợ nhập hàng loạt
-- Nút "Duyệt câu hỏi": Dành cho các câu hỏi do user đóng góp (nếu có)
+- Tiêu đề: `Quản lý câu hỏi`
+- Nút `Thêm câu hỏi bằng Excel`
 
 ### 2.2. Bộ Lọc
-- Chủ đề: Khoa học, Xã hội, Thể thao...
-- Độ khó: Dễ, Trung bình, Khó
-- Trạng thái: Đang hoạt động, Chờ duyệt, Tạm ẩn
-- Tìm kiếm: Theo nội dung câu hỏi
+- Tìm kiếm theo nội dung câu hỏi
+- Lọc theo chủ đề (`topic`)
+- Lọc theo cấp độ (`Dễ/Trung bình/Khó`)
+- Lọc theo trạng thái (`Đang chỉnh sửa/Đang đợi duyệt/Đã duyệt/Đã từ chối`)
 
 ### 2.3. Danh Sách Câu Hỏi (Data Table)
-- Cột Nội dung: Hiển thị trích đoạn câu hỏi
-- Cột Chủ đề
-- Cột Độ khó (Màu sắc phân biệt)
-- Cột Đáp án đúng
-- Cột Người tạo
-- Cột Trạng thái
-- Cột Hành động: Sửa, Xóa, Ẩn/Hiện
+- Hỗ trợ chọn nhiều dòng (`row selection`) để xóa hàng loạt
+- Các cột: `ID`, `Nội dung`, `Chủ đề`, `Level`, `Kiểu câu hỏi`, `Trạng thái`, `Hành động`
+- Hành động từng dòng: `Sửa`, `Xóa`
+- Có phân trang và đổi số bản ghi/trang
 
-### 2.4. Form Thêm/Sửa Câu Hỏi
-- Trường Nội dung câu hỏi (Rich text editor hoặc Text area)
-- Trường Upload hình ảnh/âm thanh đính kèm
-- Dropdown Chủ đề
-- Dropdown Độ khó
-- 4 Trường Đáp án (A, B, C, D) có Radio button để chọn đáp án đúng
-- Trường Giải thích đáp án (Optional)
-- Trạng thái: Checkbox "Kích hoạt ngay"
+### 2.4. Modal Cập Nhật Câu Hỏi
+- Nội dung câu hỏi (`textarea`)
+- Chủ đề, Level, Kiểu câu hỏi, Trạng thái
+- Danh sách `Câu trả lời đúng` (tags)
+- Danh sách `Các câu trả lời` (tags)
+- Upload media: ảnh, audio, video (có preview và nút xóa media hiện tại)
+
+### 2.5. Modal Import Excel
+- Upload 1 file `.xlsx/.xls`
+- Parse dữ liệu trực tiếp ở client, map sang payload tạo nhiều câu hỏi
+- Cấu trúc cột đang dùng:
+  - A: Nội dung câu hỏi
+  - B: `TopicId`
+  - C: `Level`
+  - D: `Type`
+  - E: `CorrectAnswers` (ngăn cách `;`)
+  - F: `StringAnswers` (ngăn cách `;`)
 
 ## 3. LUỒNG THAO TÁC
 
-### 3.1. Thêm Câu Hỏi Mới
-1. Admin nhấn "Thêm câu hỏi mới"
-2. Hiển thị Form thêm mới
-3. Nhập đầy đủ thông tin: Nội dung, 4 đáp án, chọn đáp án đúng, phân loại
-4. Nhấn "Lưu"
-5. Validate dữ liệu -> Lưu vào database -> Thông báo thành công
+### 3.1. Tìm kiếm/lọc danh sách
+1. Nhập từ khóa hoặc chọn bộ lọc.
+2. Hệ thống gọi API lấy danh sách theo điều kiện.
+3. Bảng cập nhật theo kết quả.
 
-### 3.2. Import Câu Hỏi
-1. Admin nhấn "Import Excel"
+### 3.2. Import câu hỏi
+1. Admin nhấn `Thêm câu hỏi bằng Excel`.
 2. Hiển thị Popup upload file
-3. Chọn file theo mẫu quy định (.xlsx, .csv)
-4. Hệ thống preview dữ liệu
-5. Nhấn "Import" -> Hệ thống xử lý hàng loạt và báo cáo kết quả (Số dòng thành công, số dòng lỗi)
+3. Chọn file `.xlsx/.xls`.
+4. Hệ thống parse file, bỏ qua dòng không hợp lệ (thiếu nội dung hoặc thiếu topicId).
+5. Gọi API tạo bulk và hiển thị thông báo kết quả.
 
-### 3.3. Duyệt Câu Hỏi (Nếu có quy trình duyệt)
-1. Vào tab/bộ lọc "Chờ duyệt"
-2. Xem nội dung câu hỏi
-3. Nhấn "Duyệt" (Public) hoặc "Từ chối" (Kèm lý do)
+### 3.3. Cập nhật/xóa câu hỏi
+1. Chọn `Sửa` để mở modal cập nhật.
+2. Validate dữ liệu bắt buộc rồi lưu.
+3. Chọn `Xóa` để xóa 1 câu hỏi, hoặc chọn nhiều dòng để xóa hàng loạt.
 
 ## 4. QUY TẮC NGHIỆP VỤ
 
-### 4.1. Tính Toàn Vẹn
-- Một câu hỏi bắt buộc phải có 4 đáp án
-- Bắt buộc phải có đúng 1 đáp án đúng
-- Không được xóa câu hỏi đã xuất hiện trong các trận đấu log (chỉ được chuyển sang trạng thái Ẩn)
+### 4.1. Validation phía UI đang có
+- Bắt buộc: nội dung câu hỏi, chủ đề, kiểu, cấp độ
+- Bắt buộc có ít nhất 1 đáp án đúng và 1 đáp án trong danh sách câu trả lời
+- Trước khi xóa có popup xác nhận
 
-### 4.2. Media
-- Ảnh upload phải được tối ưu kích thước
-- Hỗ trợ định dạng JPG, PNG
+### 4.2. Phạm vi hiện tại
+- Chưa có màn riêng để `thêm thủ công` từng câu hỏi (chỉ có sửa câu hỏi hiện có và import Excel).
+- Chưa có flow duyệt/từ chối tách riêng theo vai trò.
 
 ## 5. RESPONSIVE
-- Desktop: Hiển thị dạng bảng chi tiết, Form chia 2 cột.
-- Mobile: Hiển thị dạng thẻ (Card), Form 1 cột dọc.
+- Thiết kế hiện tại tối ưu cho desktop (bảng dữ liệu rộng + modal chỉnh sửa).

@@ -2,62 +2,56 @@
 
 ## 1. MỤC ĐÍCH
 
-Giao diện Xem thống kê cung cấp cái nhìn tổng quan và chi tiết về tình hình hoạt động của hệ thống thông qua các báo cáo số liệu và biểu đồ trực quan.
+Giao diện cung cấp số liệu tổng quan hệ thống, xu hướng user và danh sách user đăng ký gần đây.
 
 ## 2. CÁC THÀNH PHẦN GIAO DIỆN
 
-### 2.1. Phần Header & Bộ Lọc
-- Tiêu đề: "Báo cáo & Thống kê".
-- Bộ lọc thời gian (Bên phải):
-  - Dropdown chọn nhanh: Hôm nay, 7 ngày qua, 30 ngày qua, 3 tháng, 1 năm.
-  - Tùy chọn: Date picker (Từ ngày - Đến ngày).
-- Các nút chức năng:
-  - Nút "Export": Xuất báo cáo ra Excel/PDF.
-  - Nút "Lên lịch": Cài đặt gửi báo cáo định kỳ qua email.
+### 2.1. Header & Bộ lọc thời gian
+- Tiêu đề: `Báo cáo & thống kê`
+- Bộ lọc:
+  - Chọn nhanh `7 ngày qua` hoặc `30 ngày qua`
+  - Hoặc chọn khoảng ngày bằng `range picker`
+- Nút:
+  - `Export` (mở API xuất file theo filter hiện tại)
+  - `Lên lịch` (đang là UI button, chưa có luồng xử lý)
 
-### 2.2. Tabs Phân Loại Thống Kê
-- Tab "Người dùng": Số liệu về đăng ký user, active user.
-- Tab "Câu hỏi": Số lượng câu hỏi mới, tỷ lệ duyệt, thống kê theo chủ đề.
-- Tab "Trận đấu": Tổng số trận, giờ cao điểm, tỷ lệ hoàn thành.
-- Tab "Tài chính" (Nếu có): Doanh thu, nạp tiền.
+### 2.2. Tabs hiển thị
+- Có 3 tab UI: `Người dùng`, `Câu hỏi`, `Trận đấu`
+- Hiện tại dữ liệu đang render theo bộ thống kê user/system chung (chưa có luồng riêng theo từng tab)
 
-### 2.3. Khu Vực Chỉ Số KPI (KPI Cards)
-- Hiển thị lưới các thẻ chỉ số quan trọng (3-4 thẻ hàng ngang):
-  - Label: Tên chỉ số (Ví dụ: Tổng người dùng mới).
-  - Value: Số liệu thực tế (In đậm, to).
-  - Trend: So sánh với kỳ trước (Mũi tên Xanh tăng / Đỏ giảm).
-  - Icon minh họa mờ nền.
+### 2.3. Khu vực KPI cards
+- 4 thẻ chính:
+  - `Người dùng mới`
+  - `Tổng người dùng`
+  - `Tổng đăng ký`
+  - `Peak CCU`
+- Mỗi thẻ hiển thị giá trị + phần trăm thay đổi tăng/giảm
 
-### 2.4. Khu Vực Biểu Đồ (Charts)
-- Biểu đồ đường (Line Chart): Xu hướng thay đổi theo thời gian (Ví dụ: CCU theo giờ, New User theo ngày).
-- Biểu đồ cột (Bar Chart): So sánh giữa các nhóm (Ví dụ: Số lượng câu hỏi theo Chủ đề).
-- Biểu đồ tròn (Pie/Donut Chart): Tỷ lệ phần trăm (Ví dụ: Tỷ lệ các gói nạp, Tỷ lệ Trận Solo vs Multiplayer).
-- Có Legend chú thích màu sắc.
+### 2.4. Khu vực biểu đồ
+- Biểu đồ area: `Xu hướng người dùng mới`
+- Biểu đồ donut: `Tỷ lệ tài khoản` (`Active/Banned/Inactive`)
 
-### 2.5. Bảng Chi Tiết (Data Table)
-- Hiển thị dữ liệu chi tiết tương ứng với biểu đồ bên trên.
-- Các cột dữ liệu số liệu cụ thể.
-- Phân trang nếu dữ liệu dài.
+### 2.5. Bảng chi tiết user gần đây
+- Cột: `ID`, `Tên hiển thị`, `Email`, `Ngày đăng ký`, `Trạng thái`, `Tổng số trận`
+- Có phân trang, đổi page size
 
 ## 3. LUỒNG THAO TÁC
 
-### 3.1. Xem Báo Cáo
-1. Admin vào trang "Báo cáo & Thống kê".
-2. Hệ thống mặc định hiển thị Tab "Người dùng" và thời gian "7 ngày qua".
-3. Admin đổi Tab sang "Trận đấu" -> KPI cards và Biểu đồ cập nhật theo dữ liệu trận đấu.
-4. Admin đổi thời gian sang "Hôm nay" -> Tất cả số liệu được tính toán lại và hiển thị.
+### 3.1. Xem dữ liệu
+1. Khi vào trang, hệ thống tải:
+   - Thống kê tổng quan (`getSystemAnalytics`)
+   - Danh sách user gần đây (`getRecentUsersAnalytics`)
+2. Admin thay đổi filter thời gian, dữ liệu sẽ dùng filter đó cho lần tải/export tiếp theo.
 
-### 3.2. Xuất Báo Cáo
-1. Admin nhấn nút "Export".
-2. Chọn định dạng (Excel hoặc PDF).
-3. Hệ thống xử lý (Loading) và tải file xuống máy.
+### 3.2. Export
+1. Nhấn `Export`.
+2. Hệ thống tạo query theo `lastDays` hoặc `startDate/endDate`.
+3. Mở endpoint export trong tab mới để tải file.
 
 ## 4. QUY TẮC NGHIỆP VỤ
-- Dữ liệu hiển thị nên được tính toán gần như Real-time hoặc cache ngắn (5-10 phút).
-- Các biểu đồ phải có Tooltip khi hover để xem con số chính xác.
-- Export file với dữ liệu lớn cần có tiến trình xử lý nền (Background job) nếu mất quá nhiều thời gian.
+- Nếu chọn khoảng ngày thủ công thì ưu tiên `startDate/endDate`; nếu không sẽ dùng `lastDays`.
+- Trạng thái user được map màu tag theo giá trị Active/Banned/Inactive.
+- Khi API lỗi sẽ hiển thị thông báo lỗi ở frontend.
 
 ## 5. RESPONSIVE
-- **Desktop:** Layout Dashboard đầy đủ, 4 cột KPI, Biểu đồ lớn.
-- **Tablet:** 2 cột KPI, Biểu đồ vừa.
-- **Mobile:** 1 cột KPI, Biểu đồ thu nhỏ (có thể cuộn ngang), ẩn bớt các cột trong bảng chi tiết.
+- Layout sử dụng grid responsive (`xs/sm/lg`) cho KPI và chart, ưu tiên trải nghiệm desktop.
