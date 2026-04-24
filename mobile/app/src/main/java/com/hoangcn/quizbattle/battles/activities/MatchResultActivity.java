@@ -61,6 +61,14 @@ public class MatchResultActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 runOnUiThread(() -> {
+                    String m = message == null ? "" : message.toLowerCase(java.util.Locale.ROOT);
+                    if (m.contains("not found") || m.contains("không tìm thấy") || m.contains("404")) {
+                        var intent = new android.content.Intent(MatchResultActivity.this, HomeActivity.class);
+                        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(intent);
+                        finish();
+                        return;
+                    }
                     tvTitle.setText("Không thể tải kết quả: " + message);
                 });
             }

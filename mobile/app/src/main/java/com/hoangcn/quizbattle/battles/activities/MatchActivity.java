@@ -26,6 +26,7 @@ import com.hoangcn.quizbattle.events.activities.QuizMilestoneChallengeActivity;
 import com.hoangcn.quizbattle.events.api.EventService;
 import com.hoangcn.quizbattle.events.models.EventModel;
 import com.hoangcn.quizbattle.events.models.UpdateQuizMilestoneProgressRequest;
+import com.hoangcn.quizbattle.home_rank.activities.HomeActivity;
 import com.hoangcn.quizbattle.shared.api.ApiCallback;
 import com.hoangcn.quizbattle.shared.models.ApiResponse;
 import com.hoangcn.quizbattle.shared.utils.SharedPreferenceUtil;
@@ -379,9 +380,10 @@ public class MatchActivity extends AppCompatActivity {
                 if (which < 0 || which >= loudspeakerMessages.length) {
                     return;
                 }
+                sidePanel.setVisibility(android.view.View.GONE);
                 sendLoudspeaker(loudspeakerMessages[which]);
             })
-            .setNegativeButton("Huy", null)
+            .setNegativeButton("Huy", (dialog, which) -> sidePanel.setVisibility(android.view.View.GONE))
             .show();
     }
 
@@ -392,13 +394,17 @@ public class MatchActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     var remain = data != null && data.getData() != null ? data.getData().getCount() : (loudspeakerCount - 1);
                     updateLoudspeakerUi(remain);
+                    sidePanel.setVisibility(android.view.View.GONE);
                     Toast.makeText(MatchActivity.this, "Da phat thong bao bang loa", Toast.LENGTH_SHORT).show();
                 });
             }
 
             @Override
             public void onError(String message) {
-                runOnUiThread(() -> Toast.makeText(MatchActivity.this, "Dung loa that bai: " + message, Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> {
+                    sidePanel.setVisibility(android.view.View.GONE);
+                    Toast.makeText(MatchActivity.this, "Dung loa that bai: " + message, Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
@@ -685,6 +691,36 @@ public class MatchActivity extends AppCompatActivity {
         layoutFeedback.setVisibility(android.view.View.GONE);
     }
 
+    /**
+     * Người chơi chủ động thoát / AFK: không đi WaitResult → MatchResult (dễ lỗi review không tồn tại), mà về Home.
+     * Trận thử thách milestone vẫn cập nhật tiến độ rồi quay lại màn thử thách.
+     */
+    private void finishAfterUserLeftMatch() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+        sendPresence(false);
+        if (isChallengeMatch && challengeEventId > 0 && challengeThresholdId > 0) {
+            eventService.updateQuizMilestoneProgress(
+                new UpdateQuizMilestoneProgressRequest(challengeEventId, challengeThresholdId, null, true),
+                new ApiCallback<>() {
+                    @Override
+                    public void onSuccess(ApiResponse<com.hoangcn.quizbattle.events.models.EventProgressModel> data) {
+                        navigateBackToChallenge();
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        runOnUiThread(() -> Toast.makeText(MatchActivity.this, "Cập nhật tiến độ thử thách thất bại: " + message, Toast.LENGTH_SHORT).show());
+                        navigateBackToChallenge();
+                    }
+                });
+            return;
+        }
+        Intent homeIntent = new Intent(this, HomeActivity.class);
+        homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(homeIntent);
+        finish();
+    }
+
     private void goToWaitResult() {
         heartbeatHandler.removeCallbacks(heartbeatRunnable);
         sendPresence(false);
@@ -726,7 +762,7 @@ public class MatchActivity extends AppCompatActivity {
         setOptionsEnabled(false);
 
         if (isSoloMatch || trackingId == null || trackingId.isEmpty() || questions.isEmpty()) {
-            goToWaitResult();
+            finishAfterUserLeftMatch();
             return;
         }
 
@@ -740,7 +776,7 @@ public class MatchActivity extends AppCompatActivity {
 
     private void submitAfkAnswersSequentially(List<Integer> questionIds, int index) {
         if (questionIds == null || index >= questionIds.size()) {
-            goToWaitResult();
+            finishAfterUserLeftMatch();
             return;
         }
         int questionId = questionIds.get(index);
