@@ -1,59 +1,57 @@
 # GIAO DIỆN SỰ KIỆN (EVENTS)
 
-## 1. MỤC ĐÍCH
+Hệ thống giao diện sự kiện được thiết kế nhất quán với các hiệu ứng âm thanh và hình ảnh sinh động.
 
-Tạo nội dung tươi mới, giới hạn thời gian để tăng tương tác người dùng, cung cấp các chế độ chơi đặc biệt và phần thưởng hấp dẫn.
+## 1. CÁC MÀN HÌNH CHÍNH
 
-## 2. CÁC THÀNH PHẦN GIAO DIỆN
+### 1.1. Danh Sách Sự Kiện (EventActivity)
+- **Hiển thị:** Danh sách (RecyclerView) các sự kiện đang diễn ra.
+- **Thành phần:** Mỗi item hiển thị Banner, Tên và Trạng thái của sự kiện.
+- **Tương tác:** Nhấn vào sự kiện sẽ điều hướng đến màn hình chi tiết tương ứng dựa trên `type` (LuckySpin, QuizMilestoneChallenge, TournamentRewards).
+- **Âm thanh:** Nhạc nền (`event_home.raw`) tự động phát khi vào màn hình.
 
-### 2.1. Banner Sự Kiện (Home Banner List)
-- Vị trí: Trên Trang chủ.
-- Kiểu hiển thị: Slide trượt ngang các sự kiện đang Active.
-- Nội dung: Hình ảnh đồ họa bắt mắt, Tên sự kiện.
+### 1.2. Màn Hình Vòng Quay May Mắn (LuckySpinEventActivity)
+- **Thành phần:**
+    - Vòng quay (LuckyWheelView) chia thành các nan quạt chứa icon phần thưởng.
+    - Text hiển thị "Số lượt quay còn lại trong ngày".
+    - Nút "Quay" (Spin).
+- **Hiệu ứng:** 
+    - Vòng quay quay trong 5 giây với gia tốc giảm dần (DecelerateInterpolator).
+    - Âm thanh: Nhạc nền sôi động, tiếng quay và nhạc chúc mừng khi trúng thưởng.
+- **Popup:** Hiển thị phần thưởng nhận được với nút xác nhận.
 
-### 2.2. Popup Chi Tiết Sự Kiện
-- Banner & Tiêu đề: Hình ảnh chủ đạo và tên sự kiện.
-- Mô tả & Luật chơi:
-  - Text mô tả nội dung sự kiện.
-  - Luật chơi đặc biệt (nếu có).
-- Đồng hồ đếm ngược: Thời gian còn lại của sự kiện.
-- Danh sách phần thưởng (Reward List): Các mốc quà đạt được.
-- Nút "Tham gia ngay":
-  - Hiển thị số vé/lượt còn lại (Ví dụ: "3/3 lượt miễn phí").
-  - Kêu gọi hành động chính.
+### 1.3. Màn Hình Thử Thách Cột Mốc (QuizMilestoneChallengeActivity)
+- **Thành phần:**
+    - Thanh tiến trình dọc (Progress Bar) thể hiện các ải.
+    - Danh sách các cột mốc: Ải đã xong (có dấu check), Ải hiện tại, Ải chưa đạt.
+- **Tương tác:**
+    - Nhấn vào ải chưa hoàn thành -> Bắt đầu trận đấu thử thách.
+    - Nhấn vào ải đã hoàn thành nhưng chưa nhận quà -> Hiện Popup nhận quà.
 
-### 2.3. Thanh Tiến Trình Sự Kiện (In-game Progress)
-- Vị trí: Trong popup sự kiện hoặc giao diện riêng của sự kiện.
-- Nội dung: Thanh progress bar hiển thị điểm tích lũy và các mốc quà (Milestones) có thể nhận.
-- Trạng thái:
-  - Đã nhận: Sáng lên, có dấu check.
-  - Có thể nhận: Sáng lên, có hiệu ứng nhắc nhở.
-  - Chưa đạt: Mờ đi.
+[//]: # (### 1.4. Màn Hình Nhiệm Vụ &#40;TournamentRewardsEventActivity&#41;)
 
-## 3. LUỒNG THAO TÁC
+[//]: # (- **Thành phần:** Danh sách các thẻ nhiệm vụ.)
 
-### 3.1. Luồng Xem Và Tham Gia
-1. Người dùng nhấn vào Banner sự kiện ở Trang chủ.
-2. Hệ thống hiển thị Popup chi tiết sự kiện.
-3. Người dùng xem thông tin và nhấn "Tham gia ngay".
-4. Hệ thống kiểm tra điều kiện (Vé/Lượt chơi):
-   - Nếu đủ: Trừ vé -> Chuyển sang màn hình thi đấu (Bộ câu hỏi riêng của Event).
-   - Nếu thiếu: Hiển thị gợi ý mua thêm vé.
+[//]: # (- **Nội dung thẻ:** Mô tả ngắn gọn nhiệm vụ, phần thưởng và tiến độ &#40;ví dụ: 2/5 trận&#41;.)
 
-### 3.2. Luồng Nhận Thưởng
-1. Sau khi kết thúc game sự kiện, hệ thống tổng kết điểm event.
-2. Cập nhật thanh tiến trình sự kiện.
-3. Nếu đạt mốc quà: Hiển thị Popup "Nhận quà" ngay lập tức.
+[//]: # (- **Tương tác:** Nút "Nhận thưởng" sẽ sáng lên khi tiến độ đạt 100%.)
 
-## 4. QUY TẮC NGHIỆP VỤ
+## 2. CÁC THÀNH PHẦN DÙNG CHUNG
 
-### 4.1. Tính Chất Sự Kiện
-- Giới hạn thời gian (Limited-time).
-- Không tính vào Rank Point chính (tránh lạm phát ELO).
-- Sử dụng hệ thống phần thưởng riêng (Currency, Khung avatar, Huy hiệu).
+### 2.1. Popup Phần Thưởng (DialogReward)
+- Giao diện trong suốt (`TransparentDialog`).
+- Hiển thị: Icon phần thưởng, Tên phần thưởng và Giá trị (ví dụ: +100).
+- Hiệu ứng: Phát nhạc `reward_event.raw` khi hiển thị.
 
-### 4.2. Cơ Chế Thưởng
-- Milestone: Đạt mốc 5 câu/10 câu -> Nhận quà ngay.
-- Event Leaderboard: Top 10 người cao điểm nhất sự kiện nhận Huy hiệu độc quyền sau khi sự kiện kết thúc.
+### 2.2. Hiệu Ứng Âm Thanh (Sound Effects)
+- `event_home`: Nhạc nền chung.
+- `event_cirle_round`: Nhạc nền vòng quay.
+- `spinning_event`: Tiếng quay.
+- `reward_event`: Nhạc khi nhận quà.
 
+## 3. LUỒNG THAO TÁC (USER FLOW)
 
+1.  **Vào Sự Kiện:** Home -> Click Banner Sự kiện -> Mở `EventActivity`.
+2.  **Tham Gia:** Click 1 sự kiện cụ thể -> Mở màn hình chi tiết.
+3.  **Hoàn Thành:** Thực hiện quay (Spin), thi đấu (Challenge) hoặc làm nhiệm vụ (Task).
+4.  **Nhận Thưởng:** Hệ thống kiểm tra kết quả -> Hiển thị Popup Reward -> Cập nhật tài khoản người dùng.
