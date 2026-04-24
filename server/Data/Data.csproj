@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Seeders\**" />
+    <EmbeddedResource Remove="Seeders\**" />
+    <None Remove="Seeders\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.36" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.36" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.36">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.29" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\CNLib\CNLib.csproj" />
+		<ProjectReference Include="..\Core\Core.csproj" />
+		<ProjectReference Include="..\Feature.Matchs\Feature.Matchs.csproj" />
+		<ProjectReference Include="..\Feature.Quizzes\Feature.Quizzes.csproj" />
+		<ProjectReference Include="..\Feature.Settings\Feature.Settings.csproj" />
+		<ProjectReference Include="..\Feature.Users\Feature.Users.csproj" />
+	</ItemGroup>
+
+</Project>

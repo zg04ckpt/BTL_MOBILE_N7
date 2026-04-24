@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".lobby.activities.MatchMakingActivity"
+    android:background="@drawable/bg_match_making">
+    
+    <TextView
+        android:id="@+id/tv_matching_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đang ghép trận ..."
+        android:layout_marginTop="20dp"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/color1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+    
+    <ImageView
+        android:id="@+id/iv_time_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="180dp"
+        android:src="@drawable/img_time_frame"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_matching_title"
+        android:layout_marginLeft="15dp"/>
+
+    <TextView
+        android:id="@+id/tv_timer_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="00:00"
+        tools:text="00:32"
+        android:textStyle="bold"
+        android:textColor="@color/color1"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="@id/iv_time_frame"
+        app:layout_constraintStart_toStartOf="@id/iv_time_frame"
+        app:layout_constraintEnd_toEndOf="@id/iv_time_frame"
+        app:layout_constraintTop_toTopOf="@id/iv_time_frame" />
+
+    <TextView
+        android:id="@+id/tv_match_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đang tìm đối thủ..."
+        tools:text="Đã ghép được 1/2"
+        android:textColor="@color/color11"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_time_frame"/>
+
+    <!-- Danh sách người chơi với khả năng cuộn và tự xuống dòng -->
+    <ScrollView
+        android:id="@+id/sv_players"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:paddingHorizontal="20dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/tv_match_status"
+        app:layout_constraintBottom_toTopOf="@id/sv_logs">
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/ll_players_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:flexWrap="wrap"
+            app:justifyContent="center"
+            app:alignItems="center"
+            app:alignContent="center" />
+    </ScrollView>
+
+    <!-- Khu vực logs -->
+    <ScrollView
+        android:id="@+id/sv_logs"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:scrollbars="none"
+        android:overScrollMode="never"
+        android:layout_marginBottom="24dp"
+        android:paddingHorizontal="20dp"
+        app:layout_constraintBottom_toTopOf="@id/btn_cancel_match">
+
+        <LinearLayout
+            android:id="@+id/ll_logs_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical" />
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_cancel_match"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="30dp"
+        android:layout_marginBottom="35dp"
+        android:text="Huỷ ghép trận"
+        android:textColor="@color/color2"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/color9"
+        app:cornerRadius="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

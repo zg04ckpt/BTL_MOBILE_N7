@@ -1,0 +1,12 @@
+﻿using Models.Matchs.Realtimes;
+using Models.Matchs.Requests;
+
+namespace Feature.Matchs.Interfaces
+{
+    public interface ILobbyService
+    {
+        Task<string> JoinMatchLobbyAsync(int userId, JoinLobbyRequest request);
+        Task<string> OutLobbyRoomAsync(int userId, OutLobbyRequest request);
+        Task<MatchConfigOptions> GetOptionsAsync();
+    }
+}

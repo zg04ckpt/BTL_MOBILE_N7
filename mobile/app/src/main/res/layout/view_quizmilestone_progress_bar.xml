@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="500dp"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <View
+        android:layout_width="20dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:layout_marginStart="20dp"
+        android:background="@drawable/bg_quizmilestone_progress"/>
+
+    <View
+        android:layout_width="20dp"
+        android:layout_height="350dp"
+        android:layout_marginStart="20dp"
+        android:layout_gravity="start"
+        android:background="@drawable/bg_quizmilestone_progress_completed"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:listitem="@layout/item_quizmilestone_progress"
+        tools:itemCount="5"/>
+
+</FrameLayout>
