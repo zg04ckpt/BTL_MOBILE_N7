@@ -15,6 +15,7 @@ namespace Feature.Matchs.Interfaces
         Task<bool> AddNewMatchRoomAsync(string trackingId, List<PlayerInLobbyInfoDto> players, Match match);
         Task<bool> AddPlayerAnswerAsync(string trackingId, MatchPlayerAnswerDto answer);
         Task<bool> UpdateLeaderboardAsync(string trackingId, List<UserMappingDto> updatedUsers);
+        Task<Dictionary<int, MatchPlayerInfoDto>> GetPlayerPresenceAsync(string trackingId);
         Task<bool> AppendMatchEventAsync(string trackingId, MatchRealtimeEventDto matchEvent, string? statusLog = null);
         Task<bool> CloseMatchRoomAsync(string trackingId);
     }

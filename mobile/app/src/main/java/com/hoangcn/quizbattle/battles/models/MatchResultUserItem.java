@@ -7,6 +7,7 @@ public class MatchResultUserItem {
     private int score;
     private int expGained;
     private int rankScoreGained;
+    private boolean isRankProtected;
 
     public int getUserId() {
         return userId;
@@ -30,5 +31,9 @@ public class MatchResultUserItem {
 
     public int getRankScoreGained() {
         return rankScoreGained;
+    }
+
+    public boolean isRankProtected() {
+        return isRankProtected;
     }
 }

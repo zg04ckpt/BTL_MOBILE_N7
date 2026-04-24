@@ -15,6 +15,7 @@ namespace Models.Matchs.DTOs
         public string DisplayName { get; set; } = string.Empty;
         public string AvatarUrl { get; set; } = string.Empty;
         public int Score { get; set; }
+        public int Correct { get; set; }
         public int Progress { get; set; }
         public int Rank { get; set; }
         public bool IsFinished { get; set; }

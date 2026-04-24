@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/tvRank"
+        android:layout_width="46dp"
+        android:layout_height="wrap_content"
+        android:text="#1"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:textColor="@color/color11" />
+
+    <ImageView
+        android:id="@+id/ivAvatar"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/avatar_current_user"
+        android:contentDescription="avatar" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="10dp">
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Người chơi"
+            android:textStyle="bold"
+            android:textColor="@color/color11"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 điểm"
+            android:textColor="@color/color1"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/tvExp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0 XP"
+            android:textColor="@color/color7"
+            android:textStyle="bold"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvRankScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0 rank"
+            android:textColor="@color/color6"
+            android:textStyle="bold"
+            android:textSize="12sp" />
+
+        <ImageView
+            android:id="@+id/ivRankProtection"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginTop="2dp"
+            android:contentDescription="rank protection card"
+            android:src="@drawable/defend_rank_prize"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>
