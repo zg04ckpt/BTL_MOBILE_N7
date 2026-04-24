@@ -1,6 +1,7 @@
 package com.hoangcn.quizbattle.events.activities;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
@@ -27,6 +28,7 @@ public class EventActivity extends AppCompatActivity {
     private EventAdapter adapter;
     private RecyclerView rvEvents;
     private Button btnBack;
+    private MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +44,35 @@ public class EventActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadData();
+        startBackgroundMusic();
+    }
+
+    private void startBackgroundMusic() {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(this, R.raw.event_home);
+            mediaPlayer.setLooping(true);
+        }
+        if (!mediaPlayer.isPlaying()) {
+            mediaPlayer.start();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     private void loadData() {
@@ -89,8 +120,8 @@ public class EventActivity extends AppCompatActivity {
             }
 
             if (event.getType().equals("TournamentRewards")) {
-                Intent intent = new Intent(EventActivity.this, QuizMilestoneChallengeActivity.class);
-                intent.putExtra(QuizMilestoneChallengeActivity.KEY_EVENT, event);
+                Intent intent = new Intent(EventActivity.this, TournamentRewardsEventActivity.class);
+                intent.putExtra(TournamentRewardsEventActivity.KEY_EVENT, event);
                 startActivity(intent);
                 return;
             }

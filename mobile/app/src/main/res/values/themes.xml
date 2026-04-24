@@ -9,4 +9,12 @@
     <style name="BottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:background">@android:color/transparent</item>
     </style>
+  
+  <style name="TransparentDialog" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+    </style>
+  <style name="CircleAppearanceOverlay">
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>

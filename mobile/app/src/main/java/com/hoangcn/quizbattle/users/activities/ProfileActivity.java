@@ -27,6 +27,7 @@ import java.util.List;
 
 public class ProfileActivity extends AppCompatActivity {
 
+    private ImageView ivBack;
     private ImageView ivAvatar;
     private TextView tvUsername;
     private TextView tvLevelLabel;
@@ -47,6 +48,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        ivBack = findViewById(R.id.iv_back);
         ivAvatar = findViewById(R.id.iv_avatar);
         tvUsername = findViewById(R.id.tv_username);
         tvLevelLabel = findViewById(R.id.tv_level_label);
@@ -55,12 +57,16 @@ public class ProfileActivity extends AppCompatActivity {
         btnEditProfile = findViewById(R.id.btn_edit_profile);
 
         setupStats("-", "-", "-", "-");
-        setupMatchHistory();
     }
 
     private void setListeners() {
+        ivBack.setOnClickListener(v -> navigateHome());
         btnEditProfile.setOnClickListener(l -> openEditProfileDialog());
         btnLogout.setOnClickListener(l -> logout());
+    }
+
+    private void navigateHome() {
+        finish();
     }
 
     private void logout() {
@@ -117,22 +123,6 @@ public class ProfileActivity extends AppCompatActivity {
         ivIcon.setImageResource(iconRes);
         tvValue.setText(value);
         tvLabel.setText(label);
-    }
-
-    private void setupMatchHistory() {
-        RecyclerView rvHistory = findViewById(R.id.rv_history);
-
-        List<MatchHistory> data = new ArrayList<>();
-        data.add(new MatchHistory(R.drawable.opponent_avatar, "Nguyễn Văn B", "2 phút trước", "25", true));
-        data.add(new MatchHistory(R.drawable.opponent_avatar, "Nguyễn Văn C", "Hôm qua", "15", false));
-        data.add(new MatchHistory(R.drawable.opponent_avatar, "Nguyễn Văn D", "2 phút trước", "25", true));
-        data.add(new MatchHistory(R.drawable.opponent_avatar, "Nguyễn Văn E", "2 phút trước", "25", true));
-        data.add(new MatchHistory(R.drawable.opponent_avatar, "Nguyễn Văn F", "2 phút trước", "25", true));
-        data.add(new MatchHistory(R.drawable.opponent_avatar, "Nguyễn Văn G", "2 phút trước", "15", false));
-
-        MatchHistoryAdapter adapter = new MatchHistoryAdapter(data);
-        rvHistory.setLayoutManager(new LinearLayoutManager(this));
-        rvHistory.setAdapter(adapter);
     }
 
     private void loadProfile() {

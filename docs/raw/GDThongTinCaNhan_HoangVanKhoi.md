@@ -5,7 +5,6 @@
 * **Chức năng bao gồm:**
     * Xem thông tin cơ bản: Avatar, Tên hiển thị, Cấp độ.
     * Xem thống kê thành tích: Tổng số trận, Tỉ lệ thắng, Điểm xếp hạng.
-    * Xem lịch sử đấu gần nhất.
     * Chức năng: Đăng xuất, Chỉnh sửa thông tin, Đổi mật khẩu.
 * **Chức năng KHÔNG bao gồm:**
     * Xem chi tiết từng câu hỏi trong lịch sử đấu.
@@ -13,7 +12,6 @@
 ## 2. Các thành phần UI
 * **Header:**
     * Tiêu đề "Hồ sơ" ở giữa.
-    * Nút "Cài đặt" (icon bánh răng) ở góc phải.
 * **Khu vực Thông tin chính (Top Section):**
     * **Avatar:** Hình tròn lớn.
     * **Tên hiển thị:** Font to, đậm.
@@ -23,13 +21,6 @@
     * Điểm xếp hạng (Point).
     * Số trận đã đấu.
     * Tỉ lệ thắng (%).
-* **Khu vực Lịch sử đấu:**
-    * Tiêu đề: "Trận đấu gần đây".
-    * List item (mỗi dòng là 1 trận):
-        * Hiển thị kết quả: Thắng (Xanh) / Thua (Đỏ).
-        * Đối thủ: Tên đối thủ.
-        * Thời gian: "2 phút trước", "Hôm qua".
-        * Điểm cộng/trừ: "+25", "-15".
 * **Khu vực Chức năng:**
     * Nút **"Chỉnh sửa hồ sơ"**: Cho phép đổi tên, avatar.
     * Nút **"Đăng xuất"**: Màu đỏ hoặc xám, nằm dưới cùng.
